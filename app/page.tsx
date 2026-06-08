@@ -12,4 +12,4 @@ export default async function Home() {
       <p>Word pack: {data?.[0]?.name}</p>
     </main>
   )
- }
+}
