@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserSupabase } from '@/lib/supabase-browser'
+import Logo from '@/app/components/Logo'
 
 function getOrCreateSessionId(): string {
   let id = localStorage.getItem('session_id')
@@ -84,24 +85,9 @@ export default function HomeClient() {
   return (
     <main className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center px-4">
       {/* Title */}
-      <div className="mb-12 text-center select-none relative">
-        {/* Glow blobs */}
-        <div className="absolute inset-0 -z-10 flex items-center justify-center pointer-events-none">
-          <div className="w-64 h-32 bg-red-600/30 rounded-full blur-3xl translate-x-[-45%]" />
-          <div className="w-64 h-32 bg-blue-600/30 rounded-full blur-3xl translate-x-[45%]" />
-        </div>
-        <h1 className="font-mono text-6xl sm:text-7xl font-bold tracking-tight">
-          <span className="text-red-500">c</span>
-          <span className="text-white">0</span>
-          <span className="text-white">d</span>
-          <span className="text-white">e</span>
-          <span className="text-blue-500">n</span>
-          <span className="text-white">4</span>
-          <span className="text-white">m</span>
-          <span className="text-white">e</span>
-          <span className="text-white">s</span>
-        </h1>
-        <p className="mt-3 text-zinc-500 font-mono text-sm tracking-widest uppercase">
+      <div className="mb-12 text-center">
+        <Logo size="lg" />
+        <p className="mt-4 text-zinc-600 font-mono text-xs tracking-[0.3em] uppercase">
           real-time multiplayer codenames
         </p>
       </div>

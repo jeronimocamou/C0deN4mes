@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { createBrowserSupabase } from '@/lib/supabase-browser'
 import { useRouter } from 'next/navigation'
+import Logo from '@/app/components/Logo'
 
 type Props = {
   email: string
@@ -66,9 +67,7 @@ export default function ProfileClient({ email, displayName, gamesPlayed, gamesWo
     <main className="px-4 py-10 max-w-md mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-10">
-        <a href="/" className="font-mono text-xl font-bold">
-          <span className="text-red-500">c</span>0den<span className="text-blue-500">4</span>mes
-        </a>
+        <a href="/"><Logo size="sm" /></a>
         <button
           onClick={handleSignOut}
           className="font-mono text-xs text-zinc-500 hover:text-zinc-300 border border-zinc-800 px-3 py-1.5 rounded-lg transition-colors"

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { createBrowserSupabase } from '@/lib/supabase-browser'
 import { useRouter } from 'next/navigation'
+import Logo from '@/app/components/Logo'
 
 export default function ResetPasswordPage() {
   const router = useRouter()
@@ -26,10 +27,8 @@ export default function ResetPasswordPage() {
   return (
     <main className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center px-4">
       <div className="mb-8 text-center">
-        <a href="/" className="font-mono text-2xl font-bold tracking-tight">
-          <span className="text-red-500">c</span>0den<span className="text-blue-500">4</span>mes
-        </a>
-        <p className="mt-2 font-mono text-xs text-zinc-500">set a new password</p>
+        <a href="/"><Logo size="sm" /></a>
+        <p className="mt-3 font-mono text-xs text-zinc-600">set a new password</p>
       </div>
 
       <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-2xl p-8 space-y-4">
