@@ -51,14 +51,14 @@ export async function POST(req: NextRequest) {
   const redTeam = players.filter(p => p.team === 'red')
   const blueTeam = players.filter(p => p.team === 'blue')
 
+  if (redTeam.length === 0)
+    return Response.json({ error: 'Red team needs at least one player' }, { status: 400 })
+  if (blueTeam.length === 0)
+    return Response.json({ error: 'Blue team needs at least one player' }, { status: 400 })
   if (!redTeam.some(p => p.role === 'spymaster'))
     return Response.json({ error: 'Red team needs a spymaster' }, { status: 400 })
   if (!blueTeam.some(p => p.role === 'spymaster'))
     return Response.json({ error: 'Blue team needs a spymaster' }, { status: 400 })
-  if (!redTeam.some(p => p.role === 'operative'))
-    return Response.json({ error: 'Red team needs an operative' }, { status: 400 })
-  if (!blueTeam.some(p => p.role === 'operative'))
-    return Response.json({ error: 'Blue team needs an operative' }, { status: 400 })
 
   // Fetch word pack
   const { data: pack } = await supabase

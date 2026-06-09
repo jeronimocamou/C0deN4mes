@@ -126,9 +126,7 @@ export default function LobbyClient({ code }: { code: string }) {
 
   const hasRedSpymaster = redTeam.some(p => p.role === 'spymaster')
   const hasBlueSpymaster = blueTeam.some(p => p.role === 'spymaster')
-  const hasRedOperative = redTeam.some(p => p.role === 'operative')
-  const hasBlueOperative = blueTeam.some(p => p.role === 'operative')
-  const canStart = hasRedSpymaster && hasBlueSpymaster && hasRedOperative && hasBlueOperative
+  const canStart = hasRedSpymaster && hasBlueSpymaster && redTeam.length > 0 && blueTeam.length > 0
 
   if (error && players.length === 0) {
     return (
@@ -154,6 +152,7 @@ export default function LobbyClient({ code }: { code: string }) {
           color="red"
           players={redTeam}
           me={me}
+          spymasterTaken={redTeam.some(p => p.role === 'spymaster')}
           onJoinTeam={() => updateMyRole('team', 'red')}
           onPickRole={(role) => updateMyRole('role', role)}
         />
@@ -162,6 +161,7 @@ export default function LobbyClient({ code }: { code: string }) {
           color="blue"
           players={blueTeam}
           me={me}
+          spymasterTaken={blueTeam.some(p => p.role === 'spymaster')}
           onJoinTeam={() => updateMyRole('team', 'blue')}
           onPickRole={(role) => updateMyRole('role', role)}
         />
@@ -194,7 +194,7 @@ export default function LobbyClient({ code }: { code: string }) {
           </button>
           {!canStart && (
             <p className="mt-2 font-mono text-xs text-zinc-600 text-center">
-              each team needs a spymaster + at least one operative
+              each team needs at least one player and a spymaster
             </p>
           )}
         </div>
@@ -211,12 +211,14 @@ function TeamColumn({
   color,
   players,
   me,
+  spymasterTaken,
   onJoinTeam,
   onPickRole,
 }: {
   color: 'red' | 'blue'
   players: Player[]
   me: Player | undefined
+  spymasterTaken: boolean
   onJoinTeam: () => void
   onPickRole: (role: 'spymaster' | 'operative') => void
 }) {
@@ -260,8 +262,10 @@ function TeamColumn({
             Operative
           </button>
           <button
-            onClick={() => onPickRole('spymaster')}
-            className="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white font-mono text-xs py-2 rounded-lg transition-colors"
+            onClick={() => !spymasterTaken && onPickRole('spymaster')}
+            disabled={spymasterTaken}
+            className="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white font-mono text-xs py-2 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            title={spymasterTaken ? 'Spymaster already taken' : undefined}
           >
             Spymaster
           </button>
