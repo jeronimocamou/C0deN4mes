@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import ChatSidebar from '@/app/components/ChatSidebar'
 
 type Player = {
   id: string
@@ -203,6 +204,8 @@ export default function LobbyClient({ code }: { code: string }) {
       {!me?.is_host && (
         <p className="mt-6 font-mono text-xs text-zinc-700 text-center">waiting for host to start…</p>
       )}
+
+      <ChatSidebar roomCode={code} sessionId={sessionId} myTeam={me?.team ?? null} />
     </main>
   )
 }

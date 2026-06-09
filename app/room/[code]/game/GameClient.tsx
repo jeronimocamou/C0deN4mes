@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import ChatSidebar from '@/app/components/ChatSidebar'
 
 type Card = {
   id: string
@@ -259,6 +260,7 @@ export default function GameClient({ code }: { code: string }) {
           )}
         </div>
       )}
+      <ChatSidebar roomCode={code} sessionId={sessionId} myTeam={player?.team ?? null} />
     </main>
   )
 }
