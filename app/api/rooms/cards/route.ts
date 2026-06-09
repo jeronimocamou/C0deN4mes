@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
   const { data: player } = await supabase
     .from('game_players')
-    .select('role, team, role_locked_at')
+    .select('role, team, role_locked_at, is_host')
     .eq('game_id', game.id)
     .eq('session_id', session_id)
     .maybeSingle()
@@ -57,6 +57,6 @@ export async function POST(req: NextRequest) {
       red_words_remaining: game.red_words_remaining,
       blue_words_remaining: game.blue_words_remaining,
     },
-    player: { role: player.role, team: player.team },
+    player: { role: player.role, team: player.team, is_host: player.is_host },
   })
 }

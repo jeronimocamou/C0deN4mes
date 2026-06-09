@@ -21,7 +21,7 @@ type GameState = {
   blue_words_remaining: number
 }
 
-type PlayerInfo = { role: string; team: string }
+type PlayerInfo = { role: string; team: string; is_host: boolean }
 
 type Clue = { word: string; count: number; team: string } | null
 
@@ -197,7 +197,7 @@ export default function GameClient({ code }: { code: string }) {
         <div className={`text-center py-3 font-mono font-bold text-lg ${game.winner === 'red' ? 'bg-red-900/40 text-red-300' : 'bg-blue-900/40 text-blue-300'}`}>
           {game.winner?.toUpperCase()} TEAM WINS!
           <span className="ml-4 inline-flex gap-3 items-center">
-            {player && (
+            {player?.is_host && (
               <button
                 onClick={handlePlayAgain}
                 className="text-sm font-bold bg-white text-black px-3 py-1 rounded-lg hover:bg-zinc-200 transition-colors"
@@ -261,8 +261,8 @@ export default function GameClient({ code }: { code: string }) {
             </form>
           )}
 
-          {/* Operative end turn */}
-          {isOperative && isMyTurn && (
+          {/* Operative end turn — spymasters cannot end turn, only operatives */}
+          {isOperative && isMyTurn && clue && (
             <div className="flex justify-center">
               <button
                 onClick={handleEndTurn}

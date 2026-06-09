@@ -16,6 +16,10 @@ export default function ProfileClient({ email, displayName, gamesPlayed, gamesWo
   const [name, setName] = useState(displayName)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [changingPw, setChangingPw] = useState(false)
+  const [pwMessage, setPwMessage] = useState('')
+  const [pwError, setPwError] = useState('')
   const supabase = createBrowserSupabase()
 
   const winRate = gamesPlayed > 0 ? Math.round((gamesWon / gamesPlayed) * 100) : 0
@@ -37,6 +41,18 @@ export default function ProfileClient({ email, displayName, gamesPlayed, gamesWo
     setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
+  }
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault()
+    if (!newPassword || newPassword.length < 6) { setPwError('Password must be at least 6 characters'); return }
+    setChangingPw(true)
+    setPwError('')
+    setPwMessage('')
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) { setPwError(error.message) }
+    else { setPwMessage('Password updated!'); setNewPassword('') }
+    setChangingPw(false)
   }
 
   async function handleSignOut() {
@@ -89,6 +105,30 @@ export default function ProfileClient({ email, displayName, gamesPlayed, gamesWo
           </button>
         </form>
         <p className="font-mono text-xs text-zinc-700 mt-2">this name is used in all your games</p>
+      </div>
+
+      {/* Change password */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 mb-4">
+        <p className="font-mono text-xs text-zinc-500 uppercase tracking-wider mb-3">Change password</p>
+        <form onSubmit={handleChangePassword} className="flex gap-2">
+          <input
+            type="password"
+            value={newPassword}
+            onChange={e => setNewPassword(e.target.value)}
+            placeholder="new password"
+            minLength={6}
+            className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+          />
+          <button
+            type="submit"
+            disabled={changingPw || !newPassword}
+            className="bg-zinc-700 hover:bg-zinc-600 disabled:opacity-40 text-white font-mono text-xs px-4 py-2 rounded-lg transition-colors"
+          >
+            {changingPw ? '…' : 'Save'}
+          </button>
+        </form>
+        {pwError && <p className="font-mono text-xs text-red-400 mt-2">{pwError}</p>}
+        {pwMessage && <p className="font-mono text-xs text-green-400 mt-2">{pwMessage}</p>}
       </div>
 
       {/* Stats */}

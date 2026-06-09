@@ -140,7 +140,8 @@ export default function LobbyClient({ code }: { code: string }) {
   }
 
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-white px-4 py-10 max-w-3xl mx-auto">
+    <div className="min-h-screen bg-[#0a0a0a] text-white">
+    <main className="px-4 py-10 max-w-3xl mx-auto">
       {/* Header */}
       <div className="text-center mb-10">
         <p className="font-mono text-xs text-zinc-500 uppercase tracking-widest mb-1">room code</p>
@@ -209,6 +210,7 @@ export default function LobbyClient({ code }: { code: string }) {
 
       <ChatSidebar roomCode={code} sessionId={sessionId} myTeam={me?.team ?? null} />
     </main>
+    </div>
   )
 }
 
