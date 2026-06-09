@@ -279,8 +279,8 @@ export default function GameClient({ code }: { code: string }) {
             </form>
           )}
 
-          {/* Operative end turn — spymasters cannot end turn, only operatives */}
-          {isOperative && isMyTurn && clue && (
+          {/* End turn — operatives after a clue is given, spymasters anytime it's their turn */}
+          {((isOperative && clue) || isSpymaster) && isMyTurn && (
             <div className="flex justify-center">
               <button
                 onClick={handleEndTurn}
