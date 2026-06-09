@@ -62,7 +62,7 @@ export default function LoginClient() {
         <a href="/" className="font-mono text-2xl font-bold tracking-tight">
           <span className="text-red-500">c</span>0den<span className="text-blue-500">4</span>mes
         </a>
-        <p className="mt-2 font-mono text-xs text-zinc-500">sign in to track your stats</p>
+        <p className="mt-2 font-mono text-xs text-zinc-500">sign in with your email — not your display name</p>
       </div>
 
       <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-2xl p-8 space-y-5">
