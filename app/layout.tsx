@@ -27,7 +27,12 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <span className="fixed bottom-2 right-3 font-mono text-[10px] text-zinc-700 select-none pointer-events-none">
+          Jerome Corp. Enterprises™
+        </span>
+      </body>
     </html>
   );
 }
