@@ -96,9 +96,11 @@ export default function LobbyClient({ code }: { code: string }) {
 
   async function updateMyRole(field: 'team' | 'role', value: string) {
     if (!myPlayerId) return
+    // Switching teams resets role so you re-pick on the new team
+    const update = field === 'team' ? { team: value, role: null } : { role: value }
     await supabase
       .from('game_players')
-      .update({ [field]: value })
+      .update(update)
       .eq('id', myPlayerId)
     fetchGame()
   }
@@ -247,36 +249,42 @@ function TeamColumn({
         </div>
       ))}
 
-      {!isMyTeam && (
+      {/* Join / Switch team button — shown when not on this team */}
+      {!isMyTeam && me !== undefined && (
         <button
           onClick={onJoinTeam}
           className={`w-full ${joinBg} text-white font-mono text-xs py-2 rounded-lg transition-colors`}
         >
-          Join {color}
+          {me.team ? `Switch to ${color}` : `Join ${color}`}
         </button>
       )}
 
-      {isMyTeam && !me?.role && (
+      {/* Role picker — always shown when on this team so you can switch */}
+      {isMyTeam && (
         <div className="flex gap-2">
           <button
             onClick={() => onPickRole('operative')}
-            className="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white font-mono text-xs py-2 rounded-lg transition-colors"
+            className={`flex-1 font-mono text-xs py-2 rounded-lg transition-colors ${
+              me?.role === 'operative'
+                ? 'bg-zinc-500 text-white ring-1 ring-white/30'
+                : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
+            }`}
           >
             Operative
           </button>
           <button
             onClick={() => !spymasterTaken && onPickRole('spymaster')}
-            disabled={spymasterTaken}
-            className="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white font-mono text-xs py-2 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-            title={spymasterTaken ? 'Spymaster already taken' : undefined}
+            disabled={spymasterTaken && me?.role !== 'spymaster'}
+            className={`flex-1 font-mono text-xs py-2 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
+              me?.role === 'spymaster'
+                ? 'bg-zinc-500 text-white ring-1 ring-white/30'
+                : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
+            }`}
+            title={spymasterTaken && me?.role !== 'spymaster' ? 'Spymaster already taken' : undefined}
           >
             Spymaster
           </button>
         </div>
-      )}
-
-      {isMyTeam && me?.role && (
-        <p className="font-mono text-xs text-zinc-500 text-center">you are {me.role}</p>
       )}
     </div>
   )
