@@ -87,5 +87,26 @@ export async function POST(req: NextRequest) {
 
   await supabase.from('games').update(updates).eq('id', game.id)
 
+  // Record stats when game ends
+  if (winner) {
+    const { data: players } = await supabase
+      .from('game_players')
+      .select('user_id, team')
+      .eq('game_id', game.id)
+      .not('user_id', 'is', null)
+
+    if (players && players.length > 0) {
+      for (const p of players) {
+        if (!p.user_id) continue
+        const won = p.team === winner
+        // Upsert: create row if doesn't exist, then increment
+        await supabase.rpc('increment_user_stats', {
+          p_user_id: p.user_id,
+          p_won: won,
+        })
+      }
+    }
+  }
+
   return Response.json({ color, winner, next_team: nextTeam })
 }

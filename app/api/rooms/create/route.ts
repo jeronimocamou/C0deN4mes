@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
+import { createAuthClient } from '@/lib/supabase-auth'
 
 function generateRoomCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ' // no I or O to avoid confusion
@@ -19,6 +20,14 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = createServerClient()
+
+  // Attach user_id if authenticated
+  let user_id: string | null = null
+  try {
+    const authClient = await createAuthClient()
+    const { data: { user } } = await authClient.auth.getUser()
+    if (user) user_id = user.id
+  } catch {}
 
   // Generate a unique room code (retry on collision)
   let room_code = ''
@@ -50,6 +59,7 @@ export async function POST(req: NextRequest) {
       session_id,
       display_name: display_name.trim(),
       is_host: true,
+      ...(user_id ? { user_id } : {}),
     })
     .select('id')
     .single()

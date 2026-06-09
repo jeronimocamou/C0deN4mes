@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
+import { createAuthClient } from '@/lib/supabase-auth'
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
@@ -11,6 +12,14 @@ export async function POST(req: NextRequest) {
 
   const supabase = createServerClient()
   const code = (room_code as string).toUpperCase().trim()
+
+  // Attach user_id if authenticated
+  let user_id: string | null = null
+  try {
+    const authClient = await createAuthClient()
+    const { data: { user } } = await authClient.auth.getUser()
+    if (user) user_id = user.id
+  } catch {}
 
   // Find game
   const { data: game, error: gameError } = await supabase
@@ -49,6 +58,7 @@ export async function POST(req: NextRequest) {
       session_id,
       display_name: display_name.trim(),
       is_host: false,
+      ...(user_id ? { user_id } : {}),
     })
     .select('id')
     .single()

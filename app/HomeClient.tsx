@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { createBrowserSupabase } from '@/lib/supabase-browser'
 
 function getOrCreateSessionId(): string {
   let id = localStorage.getItem('session_id')
@@ -18,12 +19,19 @@ export default function HomeClient() {
   const [roomCode, setRoomCode] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState<'create' | 'join' | null>(null)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
   const nameRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const saved = localStorage.getItem('display_name')
     if (saved) setDisplayName(saved)
     nameRef.current?.focus()
+
+    // Check auth state
+    const supabase = createBrowserSupabase()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setUserEmail(user.email ?? null)
+    })
   }, [])
 
   function saveName(name: string) {
@@ -159,9 +167,27 @@ export default function HomeClient() {
         )}
       </div>
 
-      <p className="mt-8 font-mono text-xs text-zinc-700">
-        no account needed · just play
-      </p>
+      <div className="mt-8 font-mono text-xs text-zinc-600 flex items-center gap-3">
+        {userEmail ? (
+          <>
+            <a href="/profile" className="hover:text-zinc-400 transition-colors underline">
+              {userEmail}
+            </a>
+            <span>·</span>
+            <a href="/profile" className="hover:text-zinc-400 transition-colors">
+              stats & profile →
+            </a>
+          </>
+        ) : (
+          <>
+            <span>no account needed · just play</span>
+            <span>·</span>
+            <a href="/auth/login" className="hover:text-zinc-400 transition-colors underline">
+              sign in for stats
+            </a>
+          </>
+        )}
+      </div>
     </main>
   )
 }
