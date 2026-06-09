@@ -149,7 +149,7 @@ export default function LobbyClient({ code }: { code: string }) {
       </div>
 
       {/* Teams */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         {/* Red team */}
         <TeamColumn
           color="red"

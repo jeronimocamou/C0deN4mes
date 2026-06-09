@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
 
   if (!player) return Response.json({ error: 'Not in this game' }, { status: 403 })
 
-  await anonClient.channel(`room:${room_code}`).send({
+  await anonClient.channel(`chat:${room_code}`).send({
     type: 'broadcast',
     event: 'chat_message',
     payload: {

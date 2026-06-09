@@ -168,7 +168,7 @@ export default function GameClient({ code }: { code: string }) {
   const gameOver = !!game.winner
 
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-white flex flex-col">
+    <main className="h-screen bg-[#0a0a0a] text-white flex flex-col overflow-hidden">
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
         <div className="flex items-center gap-4">
@@ -213,8 +213,8 @@ export default function GameClient({ code }: { code: string }) {
       )}
 
       {/* Board */}
-      <div className="flex-1 p-4">
-        <div className="grid grid-cols-5 gap-2 max-w-4xl mx-auto">
+      <div className="flex-1 p-2 sm:p-4 overflow-hidden min-h-0 flex flex-col justify-center">
+        <div className="grid grid-cols-5 grid-rows-5 gap-1.5 sm:gap-2 w-full max-w-4xl mx-auto" style={{height: 'min(100%, 70vw * 5/3)'}}>
           {cards.map(card => (
             <CardTile
               key={card.id}
@@ -230,18 +230,18 @@ export default function GameClient({ code }: { code: string }) {
 
       {/* Action bar */}
       {!gameOver && (
-        <div className="border-t border-zinc-800 px-4 py-3">
+        <div className="border-t border-zinc-800 px-4 py-3 pr-20 sm:pr-4">
           {error && <p className="font-mono text-xs text-red-400 mb-2 text-center">{error}</p>}
 
           {/* Spymaster clue input */}
           {isSpymaster && isMyTurn && (
-            <form onSubmit={handleGiveClue} className="flex items-center gap-2 max-w-xl mx-auto">
+            <form onSubmit={handleGiveClue} className="flex flex-wrap items-center gap-2 max-w-xl mx-auto">
               <input
                 type="text"
                 placeholder="Clue word"
                 value={clueWord}
                 onChange={e => setClueWord(e.target.value.replace(/\s/g, ''))}
-                className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-500 uppercase"
+                className="flex-1 min-w-0 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-500 uppercase"
                 maxLength={30}
               />
               <select
@@ -325,8 +325,8 @@ function CardTile({ card, isSpymaster, canReveal, isRevealing, onClick }: {
       disabled={!clickable}
       className={`
         ${bg} ${text} ${opacity}
-        border rounded-xl p-3 font-mono text-xs font-bold uppercase tracking-wider
-        aspect-[3/2] flex items-center justify-center text-center
+        border rounded-lg sm:rounded-xl p-1.5 sm:p-3 font-mono text-[10px] sm:text-xs font-bold uppercase tracking-wide sm:tracking-wider
+        w-full h-full flex items-center justify-center text-center leading-tight
         transition-all duration-150
         ${clickable ? 'hover:scale-105 hover:brightness-110 cursor-pointer shadow-lg' : 'cursor-default'}
         ${isRevealing ? 'animate-pulse' : ''}

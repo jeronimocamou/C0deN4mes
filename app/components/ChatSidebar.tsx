@@ -36,7 +36,7 @@ export default function ChatSidebar({ roomCode, sessionId, myTeam }: Props) {
   // Realtime subscription
   useEffect(() => {
     const channel = supabase
-      .channel(`room:${roomCode}`)
+      .channel(`chat:${roomCode}`)
       .on('broadcast', { event: 'chat_message' }, ({ payload }) => {
         addMessage({
           id: `${payload.ts}-${payload.sender}`,
@@ -99,7 +99,7 @@ export default function ChatSidebar({ roomCode, sessionId, myTeam }: Props) {
       {/* Toggle button */}
       <button
         onClick={() => setOpen(o => !o)}
-        className="fixed bottom-8 right-4 z-40 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-mono text-xs px-3 py-2 rounded-full shadow-lg transition-colors flex items-center gap-2"
+        className="fixed bottom-16 sm:bottom-8 right-4 z-40 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-mono text-xs px-3 py-2 rounded-full shadow-lg transition-colors flex items-center gap-2"
       >
         💬
         {!open && unread > 0 && (
@@ -112,7 +112,7 @@ export default function ChatSidebar({ roomCode, sessionId, myTeam }: Props) {
 
       {/* Sidebar */}
       {open && (
-        <div className="fixed right-0 top-0 h-full w-72 bg-zinc-950 border-l border-zinc-800 z-30 flex flex-col shadow-2xl">
+        <div className="fixed right-0 top-0 h-full w-full sm:w-72 bg-zinc-950 border-l border-zinc-800 z-30 flex flex-col shadow-2xl">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
             <span className="font-mono text-sm font-bold text-white">Chat</span>
