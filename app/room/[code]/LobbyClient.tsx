@@ -175,11 +175,14 @@ export default function LobbyClient({ code }: { code: string }) {
       {unassigned.length > 0 && (
         <div className="mb-6 bg-zinc-900 border border-zinc-800 rounded-xl p-4">
           <p className="font-mono text-xs text-zinc-500 uppercase tracking-wider mb-3">waiting to pick team</p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-3">
             {unassigned.map(p => (
-              <span key={p.id} className="font-mono text-sm bg-zinc-800 px-3 py-1 rounded-full text-zinc-300">
-                {p.display_name}{p.is_host ? ' ★' : ''}
-              </span>
+              <div key={p.id} className="flex items-center gap-2">
+                <PlayerAvatar name={p.display_name} team={null} />
+                <span className="font-mono text-sm text-zinc-300">
+                  {p.display_name}{p.is_host ? ' ★' : ''}
+                </span>
+              </div>
             ))}
           </div>
         </div>
@@ -214,6 +217,17 @@ export default function LobbyClient({ code }: { code: string }) {
   )
 }
 
+function PlayerAvatar({ name, team }: { name: string; team: 'red' | 'blue' | null }) {
+  const initial = name.trim().charAt(0).toUpperCase() || '?'
+  const bg = team === 'red' ? 'bg-red-800' : team === 'blue' ? 'bg-blue-800' : 'bg-zinc-700'
+  const ring = team === 'red' ? 'ring-red-600' : team === 'blue' ? 'ring-blue-600' : 'ring-zinc-600'
+  return (
+    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 font-mono text-sm font-bold text-white ${bg} ring-1 ${ring}`}>
+      {initial}
+    </div>
+  )
+}
+
 function TeamColumn({
   color,
   players,
@@ -241,13 +255,14 @@ function TeamColumn({
       </h2>
 
       {players.map(p => (
-        <div key={p.id} className="flex items-center justify-between">
-          <span className="font-mono text-sm text-zinc-300">
-            {p.display_name}{p.is_host ? ' ★' : ''}
-          </span>
-          <span className="font-mono text-xs text-zinc-600">
-            {p.role ?? '—'}
-          </span>
+        <div key={p.id} className="flex items-center gap-3">
+          <PlayerAvatar name={p.display_name} team={color} />
+          <div className="flex-1 min-w-0">
+            <span className="font-mono text-sm text-zinc-200 truncate block">
+              {p.display_name}{p.is_host ? ' ★' : ''}
+            </span>
+            <span className="font-mono text-[10px] text-zinc-600">{p.role ?? 'no role'}</span>
+          </div>
         </div>
       ))}
 

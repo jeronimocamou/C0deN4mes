@@ -167,10 +167,28 @@ export default function GameClient({ code }: { code: string }) {
   const isOperative = player.role === 'operative'
   const gameOver = !!game.winner
 
+  // Flash top bar on turn change
+  const [flashTeam, setFlashTeam] = useState<string | null>(null)
+  const prevTeamRef = useRef<string>(game.current_team)
+  useEffect(() => {
+    if (prevTeamRef.current !== game.current_team) {
+      setFlashTeam(game.current_team)
+      const t = setTimeout(() => setFlashTeam(null), 800)
+      prevTeamRef.current = game.current_team
+      return () => clearTimeout(t)
+    }
+  }, [game.current_team])
+
+  const topBarFlash = flashTeam === 'red'
+    ? 'animate-flash-red'
+    : flashTeam === 'blue'
+    ? 'animate-flash-blue'
+    : ''
+
   return (
     <main className="h-screen bg-[#0a0a0a] text-white flex flex-col overflow-hidden">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
+      <div className={`flex items-center justify-between px-4 py-3 border-b border-zinc-800 transition-colors ${topBarFlash}`}>
         <div className="flex items-center gap-4">
           <span className="font-mono text-xs text-zinc-500">{code}</span>
           <ScoreBar red={game.red_words_remaining} blue={game.blue_words_remaining} />
@@ -312,7 +330,7 @@ function CardTile({ card, isSpymaster, canReveal, isRevealing, onClick }: {
     // Spymaster sees a tint on unrevealed cards
     if (color === 'red') { bg = 'bg-red-950 border-red-800'; text = 'text-red-200' }
     else if (color === 'blue') { bg = 'bg-blue-950 border-blue-800'; text = 'text-blue-200' }
-    else if (color === 'assassin') { bg = 'bg-zinc-950 border-zinc-600'; text = 'text-zinc-500' }
+    else if (color === 'assassin') { bg = 'bg-zinc-950 border-red-900 shadow-[0_0_12px_2px_rgba(185,28,28,0.5)]'; text = 'text-red-400' }
     else { bg = 'bg-zinc-800 border-zinc-600'; text = 'text-zinc-400' } // neutral
   }
 
@@ -332,7 +350,12 @@ function CardTile({ card, isSpymaster, canReveal, isRevealing, onClick }: {
         ${isRevealing ? 'animate-pulse' : ''}
       `}
     >
-      {card.is_revealed && color === 'assassin' ? '💀' : card.word}
+      {isSpymaster && !card.is_revealed && color === 'assassin' ? (
+        <span className="flex flex-col items-center gap-0.5">
+          <span className="text-base sm:text-lg">💀</span>
+          <span className="text-[8px] sm:text-[10px]">{card.word}</span>
+        </span>
+      ) : card.is_revealed && color === 'assassin' ? '💀' : card.word}
     </button>
   )
 }
