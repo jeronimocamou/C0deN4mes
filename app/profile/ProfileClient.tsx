@@ -157,6 +157,12 @@ export default function ProfileClient({ email, displayName, gamesPlayed, gamesWo
           <p className="font-mono text-xs text-zinc-700 text-center mt-2">play a game to start tracking stats</p>
         )}
       </div>
+
+      <div className="mt-6 text-center">
+        <a href="/" className="font-mono text-sm bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white px-6 py-3 rounded-xl transition-colors inline-block">
+          Go to Home →
+        </a>
+      </div>
     </main>
     </div>
   )
