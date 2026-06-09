@@ -88,7 +88,13 @@ export default function GameClient({ code }: { code: string }) {
         event: 'UPDATE',
         schema: 'public',
         table: 'games',
-      }, () => { fetchCards(sessionId) })
+      }, (payload) => {
+        if (payload.new.status === 'lobby') {
+          router.push(`/room/${code}`)
+        } else {
+          fetchCards(sessionId)
+        }
+      })
       .on('broadcast', { event: 'clue_given' }, ({ payload }) => {
         setClue(payload as Clue)
       })
@@ -121,6 +127,16 @@ export default function GameClient({ code }: { code: string }) {
     })
     setClue(null)
     fetchCards(sessionId)
+  }
+
+  async function handlePlayAgain() {
+    if (!sessionId) return
+    const res = await fetch('/api/rooms/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ room_code: code, session_id: sessionId }),
+    })
+    if (res.ok) router.push(`/room/${code}`)
   }
 
   async function handleGiveClue(e: React.FormEvent) {
@@ -180,9 +196,19 @@ export default function GameClient({ code }: { code: string }) {
       {gameOver && (
         <div className={`text-center py-3 font-mono font-bold text-lg ${game.winner === 'red' ? 'bg-red-900/40 text-red-300' : 'bg-blue-900/40 text-blue-300'}`}>
           {game.winner?.toUpperCase()} TEAM WINS!
-          <button onClick={() => router.push('/')} className="ml-4 text-sm font-normal text-zinc-400 hover:text-white underline">
-            home
-          </button>
+          <span className="ml-4 inline-flex gap-3 items-center">
+            {player && (
+              <button
+                onClick={handlePlayAgain}
+                className="text-sm font-bold bg-white text-black px-3 py-1 rounded-lg hover:bg-zinc-200 transition-colors"
+              >
+                Play Again
+              </button>
+            )}
+            <button onClick={() => router.push('/')} className="text-sm font-normal text-zinc-400 hover:text-white underline">
+              home
+            </button>
+          </span>
         </div>
       )}
 
