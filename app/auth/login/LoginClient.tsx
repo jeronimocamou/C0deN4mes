@@ -48,10 +48,7 @@ export default function LoginClient() {
         }, { onConflict: 'user_id' })
         localStorage.setItem('display_name', username)
       }
-      setMessage('Account created! Check your email to confirm, then sign in.')
-      setMode('login')
-      setPassword('')
-      setLoading(false)
+      router.push('/profile')
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
       if (error) { setError(error.message); setLoading(false) }
