@@ -84,7 +84,12 @@ export default function HomeClient() {
   return (
     <main className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center px-4">
       {/* Title */}
-      <div className="mb-12 text-center select-none">
+      <div className="mb-12 text-center select-none relative">
+        {/* Glow blobs */}
+        <div className="absolute inset-0 -z-10 flex items-center justify-center pointer-events-none">
+          <div className="w-64 h-32 bg-red-600/30 rounded-full blur-3xl translate-x-[-45%]" />
+          <div className="w-64 h-32 bg-blue-600/30 rounded-full blur-3xl translate-x-[45%]" />
+        </div>
         <h1 className="font-mono text-6xl sm:text-7xl font-bold tracking-tight">
           <span className="text-red-500">c</span>
           <span className="text-white">0</span>

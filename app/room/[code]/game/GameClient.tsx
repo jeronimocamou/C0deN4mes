@@ -317,46 +317,48 @@ function CardTile({ card, isSpymaster, canReveal, isRevealing, onClick }: {
   onClick: () => void
 }) {
   const color = card.color
+  const clickable = canReveal && !isRevealing
 
-  let bg = 'bg-zinc-800 border-zinc-700'
-  let text = 'text-zinc-200'
-
-  if (card.is_revealed) {
-    if (color === 'red') { bg = 'bg-red-700 border-red-600'; text = 'text-white' }
-    else if (color === 'blue') { bg = 'bg-blue-700 border-blue-600'; text = 'text-white' }
-    else if (color === 'assassin') { bg = 'bg-black border-zinc-600'; text = 'text-zinc-400' }
-    else { bg = 'bg-zinc-600 border-zinc-500'; text = 'text-zinc-200' } // neutral
-  } else if (isSpymaster && color) {
-    // Spymaster sees a tint on unrevealed cards
-    if (color === 'red') { bg = 'bg-red-950 border-red-800'; text = 'text-red-200' }
-    else if (color === 'blue') { bg = 'bg-blue-950 border-blue-800'; text = 'text-blue-200' }
-    else if (color === 'assassin') { bg = 'bg-zinc-950 border-red-900 shadow-[0_0_12px_2px_rgba(185,28,28,0.5)]'; text = 'text-red-400' }
-    else { bg = 'bg-zinc-800 border-zinc-600'; text = 'text-zinc-400' } // neutral
+  // Front face — unrevealed appearance
+  let frontBg = 'bg-zinc-800 border border-zinc-700'
+  let frontText = 'text-zinc-200'
+  if (isSpymaster && color) {
+    if (color === 'red') { frontBg = 'bg-red-950 border border-red-800'; frontText = 'text-red-200' }
+    else if (color === 'blue') { frontBg = 'bg-blue-950 border border-blue-800'; frontText = 'text-blue-200' }
+    else if (color === 'assassin') { frontBg = 'bg-zinc-950 border border-red-900 shadow-[0_0_12px_2px_rgba(185,28,28,0.5)]'; frontText = 'text-red-400' }
+    else { frontBg = 'bg-zinc-800 border border-zinc-600'; frontText = 'text-zinc-400' }
   }
 
-  const clickable = canReveal && !isRevealing
-  const opacity = card.is_revealed ? 'opacity-60' : 'opacity-100'
+  // Back face — revealed appearance
+  let backBg = 'bg-zinc-600 border border-zinc-500'
+  let backText = 'text-zinc-200'
+  if (color === 'red') { backBg = 'bg-red-700 border border-red-600'; backText = 'text-white' }
+  else if (color === 'blue') { backBg = 'bg-blue-700 border border-blue-600'; backText = 'text-white' }
+  else if (color === 'assassin') { backBg = 'bg-black border border-zinc-600'; backText = 'text-zinc-400' }
+
+  const sharedCard = `rounded-lg sm:rounded-xl font-mono text-[10px] sm:text-xs font-bold uppercase tracking-wide sm:tracking-wider text-center leading-tight p-1.5 sm:p-3`
 
   return (
-    <button
+    <div
+      className={`card-3d w-full h-full ${clickable ? 'cursor-pointer' : 'cursor-default'} ${isRevealing ? 'opacity-70' : 'opacity-100'}`}
       onClick={clickable ? onClick : undefined}
-      disabled={!clickable}
-      className={`
-        ${bg} ${text} ${opacity}
-        border rounded-lg sm:rounded-xl p-1.5 sm:p-3 font-mono text-[10px] sm:text-xs font-bold uppercase tracking-wide sm:tracking-wider
-        w-full h-full flex items-center justify-center text-center leading-tight
-        transition-all duration-150
-        ${clickable ? 'hover:scale-105 hover:brightness-110 cursor-pointer shadow-lg' : 'cursor-default'}
-        ${isRevealing ? 'animate-pulse' : ''}
-      `}
     >
-      {isSpymaster && !card.is_revealed && color === 'assassin' ? (
-        <span className="flex flex-col items-center gap-0.5">
-          <span className="text-base sm:text-lg">💀</span>
-          <span className="text-[8px] sm:text-[10px]">{card.word}</span>
-        </span>
-      ) : card.is_revealed && color === 'assassin' ? '💀' : card.word}
-    </button>
+      <div className={`card-inner ${card.is_revealed ? 'flipped' : ''}`}>
+        {/* Front */}
+        <div className={`card-face ${frontBg} ${frontText} ${sharedCard} ${clickable ? 'hover:brightness-110' : ''}`}>
+          {isSpymaster && color === 'assassin' ? (
+            <span className="flex flex-col items-center gap-0.5">
+              <span className="text-base sm:text-lg">💀</span>
+              <span className="text-[8px] sm:text-[10px]">{card.word}</span>
+            </span>
+          ) : card.word}
+        </div>
+        {/* Back */}
+        <div className={`card-face card-back ${backBg} ${backText} ${sharedCard}`}>
+          {color === 'assassin' ? '💀' : card.word}
+        </div>
+      </div>
+    </div>
   )
 }
 
