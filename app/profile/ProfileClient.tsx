@@ -46,7 +46,8 @@ export default function ProfileClient({ email, displayName, gamesPlayed, gamesWo
   }
 
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-white px-4 py-10 max-w-md mx-auto">
+    <div className="min-h-screen bg-[#0a0a0a] text-white">
+    <main className="px-4 py-10 max-w-md mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-10">
         <a href="/" className="font-mono text-xl font-bold">
@@ -117,6 +118,7 @@ export default function ProfileClient({ email, displayName, gamesPlayed, gamesWo
         )}
       </div>
     </main>
+    </div>
   )
 }
 
