@@ -4,26 +4,44 @@ import { useState } from 'react'
 import { createBrowserSupabase } from '@/lib/supabase-browser'
 import { useRouter } from 'next/navigation'
 
+type Mode = 'login' | 'signup'
+
 export default function LoginClient() {
   const router = useRouter()
+  const [mode, setMode] = useState<Mode>('login')
   const [email, setEmail] = useState('')
-  const [sent, setSent] = useState(false)
+  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
 
   const supabase = createBrowserSupabase()
 
-  async function handleMagicLink(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!email.trim()) return
+    if (!email.trim() || !password) return
     setLoading(true)
     setError('')
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/profile` },
-    })
-    if (error) { setError(error.message); setLoading(false) }
-    else setSent(true)
+    setMessage('')
+
+    if (mode === 'signup') {
+      const { error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/profile` },
+      })
+      if (error) { setError(error.message); setLoading(false) }
+      else {
+        setMessage('Account created! Check your email to confirm, then sign in.')
+        setMode('login')
+        setPassword('')
+        setLoading(false)
+      }
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+      if (error) { setError(error.message); setLoading(false) }
+      else router.push('/profile')
+    }
   }
 
   async function handleGoogle() {
@@ -46,54 +64,65 @@ export default function LoginClient() {
       </div>
 
       <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-2xl p-8 space-y-5">
-        {sent ? (
-          <div className="text-center space-y-3">
-            <div className="text-4xl">📬</div>
-            <p className="font-mono text-sm text-zinc-300">Check your email</p>
-            <p className="font-mono text-xs text-zinc-500">We sent a magic link to <span className="text-white">{email}</span></p>
-            <button onClick={() => setSent(false)} className="font-mono text-xs text-zinc-600 hover:text-zinc-400 underline">
-              use a different email
-            </button>
-          </div>
-        ) : (
-          <>
-            {/* Google */}
-            <button
-              onClick={handleGoogle}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-3 bg-white hover:bg-zinc-100 disabled:opacity-50 text-black font-mono text-sm font-semibold py-3 rounded-lg transition-colors"
-            >
-              <GoogleIcon />
-              Continue with Google
-            </button>
+        {/* Google */}
+        <button
+          onClick={handleGoogle}
+          disabled={loading}
+          className="w-full flex items-center justify-center gap-3 bg-white hover:bg-zinc-100 disabled:opacity-50 text-black font-mono text-sm font-semibold py-3 rounded-lg transition-colors"
+        >
+          <GoogleIcon />
+          Continue with Google
+        </button>
 
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-zinc-800" />
-              <span className="font-mono text-xs text-zinc-600">or</span>
-              <div className="flex-1 h-px bg-zinc-800" />
-            </div>
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-px bg-zinc-800" />
+          <span className="font-mono text-xs text-zinc-600">or</span>
+          <div className="flex-1 h-px bg-zinc-800" />
+        </div>
 
-            {/* Magic link */}
-            <form onSubmit={handleMagicLink} className="space-y-3">
-              <input
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2.5 text-white font-mono text-sm placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-500"
-              />
-              <button
-                type="submit"
-                disabled={loading || !email.trim()}
-                className="w-full bg-zinc-700 hover:bg-zinc-600 disabled:opacity-40 text-white font-mono text-sm font-semibold py-3 rounded-lg transition-colors"
-              >
-                {loading ? 'Sending…' : 'Send magic link'}
-              </button>
-            </form>
+        {/* Mode toggle */}
+        <div className="flex rounded-lg overflow-hidden border border-zinc-700">
+          <button
+            onClick={() => { setMode('login'); setError(''); setMessage('') }}
+            className={`flex-1 font-mono text-xs py-2 transition-colors ${mode === 'login' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+          >
+            Sign in
+          </button>
+          <button
+            onClick={() => { setMode('signup'); setError(''); setMessage('') }}
+            className={`flex-1 font-mono text-xs py-2 transition-colors ${mode === 'signup' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+          >
+            Create account
+          </button>
+        </div>
 
-            {error && <p className="font-mono text-xs text-red-400 text-center">{error}</p>}
-          </>
-        )}
+        {/* Email + password form */}
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <input
+            type="email"
+            placeholder="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2.5 text-white font-mono text-sm placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+          />
+          <input
+            type="password"
+            placeholder="password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2.5 text-white font-mono text-sm placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+          />
+          <button
+            type="submit"
+            disabled={loading || !email.trim() || !password}
+            className="w-full bg-zinc-700 hover:bg-zinc-600 disabled:opacity-40 text-white font-mono text-sm font-semibold py-3 rounded-lg transition-colors"
+          >
+            {loading ? '…' : mode === 'login' ? 'Sign in' : 'Create account'}
+          </button>
+        </form>
+
+        {error && <p className="font-mono text-xs text-red-400 text-center">{error}</p>}
+        {message && <p className="font-mono text-xs text-green-400 text-center">{message}</p>}
       </div>
 
       <button onClick={() => router.push('/')} className="mt-6 font-mono text-xs text-zinc-700 hover:text-zinc-500">
