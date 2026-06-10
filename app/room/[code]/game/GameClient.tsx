@@ -44,6 +44,7 @@ export default function GameClient({ code }: { code: string }) {
   const [flashTeam, setFlashTeam] = useState<string | null>(null)
   const prevTeamRef = useRef<string>('')
   const [chatOpen, setChatOpen] = useState(false)
+  const [overlayDismissed, setOverlayDismissed] = useState(false)
 
   useEffect(() => {
     // Visitors without a session still get one so they can spectate + chat
@@ -199,6 +200,12 @@ export default function GameClient({ code }: { code: string }) {
     return () => { if (t) clearTimeout(t) }
   }, [currentTeam])
 
+  // New game (Play Again) → the win overlay should show again next time
+  const winnerForOverlay = game?.winner ?? null
+  useEffect(() => {
+    if (!winnerForOverlay) setOverlayDismissed(false)
+  }, [winnerForOverlay])
+
   if (!game || cards.length === 0) {
     return (
       <main className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
@@ -248,10 +255,45 @@ export default function GameClient({ code }: { code: string }) {
         </div>
       )}
 
-      {/* Game over banner */}
-      {gameOver && (
+      {/* Game over — full-screen victory overlay */}
+      {gameOver && !overlayDismissed && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex flex-col items-center justify-center gap-10 px-4">
+          <h1
+            className={`font-mono font-black text-7xl sm:text-9xl text-center tracking-tight ${
+              game.winner === 'red' ? 'text-red-500' : 'text-blue-500'
+            }`}
+          >
+            {game.winner === 'red' ? 'Red Wins!' : 'Blue Wins!'}
+          </h1>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {player?.is_host && (
+              <button
+                onClick={handlePlayAgain}
+                className="bg-white text-black font-mono font-bold px-6 py-3 rounded-xl hover:bg-zinc-200 transition-colors"
+              >
+                Play Again
+              </button>
+            )}
+            <button
+              onClick={() => setOverlayDismissed(true)}
+              className="font-mono text-sm text-zinc-300 border border-zinc-600 hover:border-zinc-400 px-5 py-3 rounded-xl transition-colors"
+            >
+              View Board
+            </button>
+            <button
+              onClick={() => router.push('/')}
+              className="font-mono text-sm text-zinc-500 hover:text-white px-4 py-3 underline"
+            >
+              home
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Compact banner once the overlay is dismissed, so controls stay reachable */}
+      {gameOver && overlayDismissed && (
         <div className={`text-center py-3 font-mono font-bold text-lg ${game.winner === 'red' ? 'bg-red-900/40 text-red-300' : 'bg-blue-900/40 text-blue-300'}`}>
-          {game.winner?.toUpperCase()} TEAM WINS!
+          {game.winner === 'red' ? 'Red Wins!' : 'Blue Wins!'}
           <span className="ml-4 inline-flex gap-3 items-center">
             {player?.is_host && (
               <button
