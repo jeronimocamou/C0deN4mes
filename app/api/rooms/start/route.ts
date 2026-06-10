@@ -100,13 +100,20 @@ export async function POST(req: NextRequest) {
 
   if (lockError) return Response.json({ error: lockError.message }, { status: 500 })
 
-  // Activate game
+  // Activate game with a clean initial state (don't rely on column defaults or
+  // leftovers from a previous round). 9 red + 8 blue cards → red goes first.
   const { error: gameError } = await supabase
     .from('games')
     .update({
       status: 'active',
       current_team: 'red',
       turn_started_at: now,
+      winner: null,
+      red_words_remaining: 9,
+      blue_words_remaining: 8,
+      clue_word: null,
+      clue_count: null,
+      clue_team: null,
     })
     .eq('id', game.id)
 

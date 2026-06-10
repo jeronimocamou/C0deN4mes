@@ -46,6 +46,9 @@ export async function POST(req: NextRequest) {
       turn_started_at: null,
       red_words_remaining: 9,
       blue_words_remaining: 8,
+      clue_word: null,
+      clue_count: null,
+      clue_team: null,
     })
     .eq('id', game.id)
 
