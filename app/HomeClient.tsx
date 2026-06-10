@@ -89,7 +89,7 @@ export default function HomeClient() {
       {/* Title */}
       <div className="mb-12 text-center">
         <Logo size="lg" />
-        <p className="mt-4 text-zinc-600 font-mono text-xs tracking-[0.3em] uppercase">
+        <p className="mt-4 text-zinc-500 font-mono text-xs tracking-[0.3em] uppercase">
           real-time multiplayer codenames
         </p>
       </div>
@@ -125,7 +125,7 @@ export default function HomeClient() {
         {/* Divider */}
         <div className="flex items-center gap-3">
           <div className="flex-1 h-px bg-zinc-800" />
-          <span className="font-mono text-xs text-zinc-600">or join</span>
+          <span className="font-mono text-xs text-zinc-500">or join</span>
           <div className="flex-1 h-px bg-zinc-800" />
         </div>
 
@@ -168,7 +168,7 @@ export default function HomeClient() {
         </button>
       </div>
 
-      <div className="mt-8 font-mono text-xs text-zinc-600 flex items-center gap-3">
+      <div className="mt-8 font-mono text-xs text-zinc-500 flex items-center gap-3">
         {userEmail ? (
           <>
             <a href="/profile" className="hover:text-zinc-400 transition-colors underline">

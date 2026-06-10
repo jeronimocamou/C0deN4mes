@@ -24,7 +24,7 @@ export default function RulesModal({ onClose }: { onClose: () => void }) {
           <h2 className="font-mono text-xl font-bold text-white tracking-wide">How to play</h2>
           <button
             onClick={onClose}
-            className="text-zinc-500 hover:text-white font-mono text-sm"
+            className="text-zinc-400 hover:text-white font-mono text-sm"
             aria-label="Close"
           >
             ✕
@@ -62,7 +62,7 @@ export default function RulesModal({ onClose }: { onClose: () => void }) {
               <li>
                 Your spymaster gives a clue: <span className="text-white">one word</span> + a{' '}
                 <span className="text-white">number</span>.
-                <p className="text-zinc-500 mt-1 ml-5">
+                <p className="text-zinc-400 mt-1 ml-5">
                   e.g. <span className="text-white">&quot;Ocean&nbsp;2&quot;</span> hints that 2
                   of your words relate to the ocean (say WAVE and SHELL).
                 </p>
@@ -123,7 +123,7 @@ export default function RulesModal({ onClose }: { onClose: () => void }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h3 className="text-xs uppercase tracking-widest text-zinc-500 mb-2">{title}</h3>
+      <h3 className="text-xs uppercase tracking-widest text-zinc-400 mb-2">{title}</h3>
       {children}
     </section>
   )

@@ -61,7 +61,7 @@ export default function LoginClient() {
     <main className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center px-4">
       <div className="mb-8 text-center">
         <a href="/"><Logo size="sm" /></a>
-        <p className="mt-3 font-mono text-xs text-zinc-600">sign in with your email — not your display name</p>
+        <p className="mt-3 font-mono text-xs text-zinc-500">sign in with your email — not your display name</p>
       </div>
 
       <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-2xl p-8 space-y-5">
@@ -69,13 +69,13 @@ export default function LoginClient() {
         <div className="flex rounded-lg overflow-hidden border border-zinc-700">
           <button
             onClick={() => { setMode('login'); setError(''); setMessage('') }}
-            className={`flex-1 font-mono text-xs py-2 transition-colors ${mode === 'login' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+            className={`flex-1 font-mono text-xs py-2 transition-colors ${mode === 'login' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-300'}`}
           >
             Sign in
           </button>
           <button
             onClick={() => { setMode('signup'); setError(''); setMessage('') }}
-            className={`flex-1 font-mono text-xs py-2 transition-colors ${mode === 'signup' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+            className={`flex-1 font-mono text-xs py-2 transition-colors ${mode === 'signup' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-300'}`}
           >
             Create account
           </button>
@@ -98,7 +98,7 @@ export default function LoginClient() {
             >
               {loading ? '…' : 'Send reset email'}
             </button>
-            <button type="button" onClick={() => { setMode('login'); setError(''); setMessage('') }} className="w-full font-mono text-xs text-zinc-600 hover:text-zinc-400">
+            <button type="button" onClick={() => { setMode('login'); setError(''); setMessage('') }} className="w-full font-mono text-xs text-zinc-500 hover:text-zinc-400">
               ← back to sign in
             </button>
           </form>
@@ -113,7 +113,7 @@ export default function LoginClient() {
                 className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2.5 text-white font-mono text-sm placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-500"
               />
               {mode === 'signup' && username && (
-                <p className="font-mono text-xs text-zinc-500 mt-1.5 pl-1">
+                <p className="font-mono text-xs text-zinc-400 mt-1.5 pl-1">
                   your username will be <span className="text-white">{username}</span>
                 </p>
               )}
@@ -127,7 +127,7 @@ export default function LoginClient() {
                 className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2.5 text-white font-mono text-sm placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-500"
               />
               {mode === 'login' && (
-                <button type="button" onClick={() => { setMode('forgot'); setError(''); setMessage('') }} className="font-mono text-xs text-zinc-600 hover:text-zinc-400 mt-1.5 pl-1">
+                <button type="button" onClick={() => { setMode('forgot'); setError(''); setMessage('') }} className="font-mono text-xs text-zinc-500 hover:text-zinc-400 mt-1.5 pl-1">
                   forgot password?
                 </button>
               )}
@@ -146,7 +146,7 @@ export default function LoginClient() {
         {message && <p className="font-mono text-xs text-green-400 text-center">{message}</p>}
       </div>
 
-      <button onClick={() => router.push('/')} className="mt-6 font-mono text-xs text-zinc-700 hover:text-zinc-500">
+      <button onClick={() => router.push('/')} className="mt-6 font-mono text-xs text-zinc-500 hover:text-zinc-400">
         ← back to game
       </button>
     </main>

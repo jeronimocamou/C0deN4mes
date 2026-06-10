@@ -190,9 +190,9 @@ export default function LobbyClient({ code }: { code: string }) {
     <main className="px-4 py-10 max-w-3xl mx-auto">
       {/* Header */}
       <div className="text-center mb-10">
-        <p className="font-mono text-xs text-zinc-500 uppercase tracking-widest mb-1">room code</p>
+        <p className="font-mono text-xs text-zinc-400 uppercase tracking-widest mb-1">room code</p>
         <h1 className="font-mono text-5xl font-bold tracking-widest text-white">{code}</h1>
-        <p className="mt-2 font-mono text-xs text-zinc-600">share this code with friends</p>
+        <p className="mt-2 font-mono text-xs text-zinc-500">share this code with friends</p>
       </div>
 
       {/* Join prompt for visitors who opened the link without joining */}
@@ -247,7 +247,7 @@ export default function LobbyClient({ code }: { code: string }) {
       {/* Unassigned */}
       {unassigned.length > 0 && (
         <div className="mb-6 bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-          <p className="font-mono text-xs text-zinc-500 uppercase tracking-wider mb-3">waiting to pick team</p>
+          <p className="font-mono text-xs text-zinc-400 uppercase tracking-wider mb-3">waiting to pick team</p>
           <div className="flex flex-wrap gap-3">
             {unassigned.map(p => (
               <div key={p.id} className="flex items-center gap-2">
@@ -273,7 +273,7 @@ export default function LobbyClient({ code }: { code: string }) {
             {starting ? 'Starting…' : 'Start Game'}
           </button>
           {!canStart && (
-            <p className="mt-2 font-mono text-xs text-zinc-600 text-center">
+            <p className="mt-2 font-mono text-xs text-zinc-500 text-center">
               each team needs at least one player and a spymaster
             </p>
           )}
@@ -281,7 +281,7 @@ export default function LobbyClient({ code }: { code: string }) {
       )}
 
       {me && !me.is_host && (
-        <p className="mt-6 font-mono text-xs text-zinc-700 text-center">waiting for host to start…</p>
+        <p className="mt-6 font-mono text-xs text-zinc-500 text-center">waiting for host to start…</p>
       )}
 
       <ChatSidebar roomCode={code} sessionId={sessionId} myTeam={me?.team ?? null} onOpenChange={setChatOpen} />
@@ -334,7 +334,7 @@ function TeamColumn({
             <span className="font-mono text-sm text-zinc-200 truncate block">
               {p.display_name}{p.is_host ? ' ★' : ''}
             </span>
-            <span className="font-mono text-[10px] text-zinc-600">{p.role ?? 'no role'}</span>
+            <span className="font-mono text-[10px] text-zinc-500">{p.role ?? 'no role'}</span>
           </div>
         </div>
       ))}

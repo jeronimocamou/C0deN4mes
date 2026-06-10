@@ -28,7 +28,7 @@ export default function ResetPasswordPage() {
     <main className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center px-4">
       <div className="mb-8 text-center">
         <a href="/"><Logo size="sm" /></a>
-        <p className="mt-3 font-mono text-xs text-zinc-600">set a new password</p>
+        <p className="mt-3 font-mono text-xs text-zinc-500">set a new password</p>
       </div>
 
       <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-2xl p-8 space-y-4">

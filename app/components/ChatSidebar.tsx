@@ -114,13 +114,13 @@ export default function ChatSidebar({ roomCode, sessionId, myTeam, onOpenChange 
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
             <span className="font-mono text-sm font-bold text-white">Chat</span>
-            <button onClick={() => setOpen(false)} className="text-zinc-500 hover:text-white font-mono text-xs">✕</button>
+            <button onClick={() => setOpen(false)} className="text-zinc-400 hover:text-white font-mono text-xs">✕</button>
           </div>
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2 min-h-0">
             {visibleMessages.length === 0 && (
-              <p className="font-mono text-xs text-zinc-700 text-center mt-4">
+              <p className="font-mono text-xs text-zinc-500 text-center mt-4">
                 No messages yet
               </p>
             )}

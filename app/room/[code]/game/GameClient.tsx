@@ -209,7 +209,7 @@ export default function GameClient({ code }: { code: string }) {
   if (!game || cards.length === 0) {
     return (
       <main className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <p className="font-mono text-zinc-500 animate-pulse">Loading board…</p>
+        <p className="font-mono text-zinc-400 animate-pulse">Loading board…</p>
       </main>
     )
   }
@@ -232,12 +232,12 @@ export default function GameClient({ code }: { code: string }) {
       {/* Top bar */}
       <div className={`flex items-center justify-between px-4 py-3 border-b border-zinc-800 transition-colors ${topBarFlash}`}>
         <div className="flex items-center gap-4">
-          <span className="font-mono text-xs text-zinc-500">{code}</span>
+          <span className="font-mono text-xs text-zinc-400">{code}</span>
           <ScoreBar red={game.red_words_remaining} blue={game.blue_words_remaining} />
         </div>
         <div className="flex items-center gap-3">
           {isSpectator && (
-            <span className="font-mono text-xs text-zinc-500">👁 spectating</span>
+            <span className="font-mono text-xs text-zinc-400">👁 spectating</span>
           )}
           {timeLeft !== null && !gameOver && (
             <span className={`font-mono text-sm tabular-nums ${timeLeft <= 10 ? 'text-red-400' : 'text-zinc-400'}`}>
@@ -282,7 +282,7 @@ export default function GameClient({ code }: { code: string }) {
             </button>
             <button
               onClick={() => router.push('/')}
-              className="font-mono text-sm text-zinc-500 hover:text-white px-4 py-3 underline"
+              className="font-mono text-sm text-zinc-400 hover:text-white px-4 py-3 underline"
             >
               home
             </button>
@@ -364,7 +364,7 @@ export default function GameClient({ code }: { code: string }) {
             <div className="flex justify-center">
               <button
                 onClick={handleEndTurn}
-                className="font-mono text-sm text-zinc-500 hover:text-white border border-zinc-700 hover:border-zinc-500 px-4 py-2 rounded-lg transition-colors"
+                className="font-mono text-sm text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-500 px-4 py-2 rounded-lg transition-colors"
               >
                 End Turn
               </button>
@@ -373,14 +373,14 @@ export default function GameClient({ code }: { code: string }) {
 
           {/* Waiting */}
           {!isMyTurn && (
-            <p className="font-mono text-xs text-zinc-600 text-center">
+            <p className="font-mono text-xs text-zinc-500 text-center">
               {isSpectator
                 ? `spectating · ${game.current_team} team's turn`
                 : `waiting for ${game.current_team} team…`}
             </p>
           )}
           {isSpymaster && !isMyTurn && (
-            <p className="font-mono text-xs text-zinc-700 text-center mt-1">
+            <p className="font-mono text-xs text-zinc-500 text-center mt-1">
               you are the {player?.team} spymaster
             </p>
           )}
@@ -448,7 +448,7 @@ function ScoreBar({ red, blue }: { red: number; blue: number }) {
   return (
     <div className="flex items-center gap-2 font-mono text-sm">
       <span className="text-red-500 font-bold">{red}</span>
-      <span className="text-zinc-600">·</span>
+      <span className="text-zinc-500">·</span>
       <span className="text-blue-500 font-bold">{blue}</span>
     </div>
   )
