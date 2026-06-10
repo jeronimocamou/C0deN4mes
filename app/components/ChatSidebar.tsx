@@ -8,7 +8,6 @@ type ChatMessage = {
   sender: string
   team: string | null
   message: string
-  scope: 'all' | 'team'
   ts: number
 }
 
@@ -20,7 +19,6 @@ type Props = {
 
 export default function ChatSidebar({ roomCode, sessionId, myTeam }: Props) {
   const [open, setOpen] = useState(false)
-  const [tab, setTab] = useState<'all' | 'team'>('all')
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
@@ -43,7 +41,6 @@ export default function ChatSidebar({ roomCode, sessionId, myTeam }: Props) {
           sender: payload.sender,
           team: payload.team,
           message: payload.message,
-          scope: payload.scope,
           ts: payload.ts,
         })
       })
@@ -67,10 +64,7 @@ export default function ChatSidebar({ roomCode, sessionId, myTeam }: Props) {
     if (open) inputRef.current?.focus()
   }, [open])
 
-  const visibleMessages = messages.filter(m => {
-    if (tab === 'all') return m.scope === 'all'
-    return m.scope === 'team' && m.team === myTeam
-  })
+  const visibleMessages = messages
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault()
@@ -83,16 +77,13 @@ export default function ChatSidebar({ roomCode, sessionId, myTeam }: Props) {
         room_code: roomCode,
         session_id: sessionId,
         message: input.trim(),
-        scope: tab,
+        scope: 'all',
       }),
     })
     setInput('')
     setSending(false)
     inputRef.current?.focus()
   }
-
-  const teamColor = myTeam === 'red' ? 'text-red-400' : myTeam === 'blue' ? 'text-blue-400' : 'text-zinc-400'
-  const teamLabel = myTeam ? myTeam.toUpperCase() : 'TEAM'
 
   return (
     <>
@@ -119,40 +110,15 @@ export default function ChatSidebar({ roomCode, sessionId, myTeam }: Props) {
             <button onClick={() => setOpen(false)} className="text-zinc-500 hover:text-white font-mono text-xs">✕</button>
           </div>
 
-          {/* Tabs */}
-          <div className="flex border-b border-zinc-800">
-            <button
-              onClick={() => setTab('all')}
-              className={`flex-1 font-mono text-xs py-2 transition-colors ${
-                tab === 'all'
-                  ? 'text-white border-b-2 border-white'
-                  : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              ALL
-            </button>
-            <button
-              onClick={() => setTab('team')}
-              disabled={!myTeam}
-              className={`flex-1 font-mono text-xs py-2 transition-colors disabled:opacity-30 ${
-                tab === 'team'
-                  ? `${teamColor} border-b-2 ${myTeam === 'red' ? 'border-red-500' : 'border-blue-500'}`
-                  : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              {teamLabel}
-            </button>
-          </div>
-
           {/* Messages */}
           <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2 min-h-0">
             {visibleMessages.length === 0 && (
               <p className="font-mono text-xs text-zinc-700 text-center mt-4">
-                {tab === 'all' ? 'No messages yet' : `No ${teamLabel} team messages yet`}
+                No messages yet
               </p>
             )}
             {visibleMessages.map(m => (
-              <MessageBubble key={m.id} msg={m} myTeam={myTeam} />
+              <MessageBubble key={m.id} msg={m} />
             ))}
             <div ref={bottomRef} />
           </div>
@@ -164,7 +130,7 @@ export default function ChatSidebar({ roomCode, sessionId, myTeam }: Props) {
               type="text"
               value={input}
               onChange={e => setInput(e.target.value)}
-              placeholder={tab === 'all' ? 'Message everyone…' : `Message ${teamLabel} team…`}
+              placeholder="Message everyone…"
               maxLength={300}
               className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-xs text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-500"
             />
@@ -182,24 +148,17 @@ export default function ChatSidebar({ roomCode, sessionId, myTeam }: Props) {
   )
 }
 
-function MessageBubble({ msg, myTeam }: { msg: ChatMessage; myTeam: string | null }) {
+function MessageBubble({ msg }: { msg: ChatMessage }) {
   const teamDot =
     msg.team === 'red' ? 'bg-red-500' :
     msg.team === 'blue' ? 'bg-blue-500' :
     'bg-zinc-600'
 
-  const isTeamMsg = msg.scope === 'team'
-
   return (
-    <div className={`rounded-lg px-3 py-2 ${isTeamMsg ? 'bg-zinc-900 border border-zinc-800' : 'bg-zinc-900'}`}>
+    <div className="rounded-lg px-3 py-2 bg-zinc-900">
       <div className="flex items-center gap-1.5 mb-0.5">
         <span className={`w-2 h-2 rounded-full flex-shrink-0 ${teamDot}`} />
         <span className="font-mono text-[10px] font-bold text-zinc-400">{msg.sender}</span>
-        {isTeamMsg && (
-          <span className={`font-mono text-[10px] ${msg.team === 'red' ? 'text-red-600' : 'text-blue-600'}`}>
-            · team only
-          </span>
-        )}
       </div>
       <p className="font-mono text-xs text-zinc-200 break-words">{msg.message}</p>
     </div>

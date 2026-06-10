@@ -39,6 +39,8 @@ export default function GameClient({ code }: { code: string }) {
   const [error, setError] = useState('')
   const [timeLeft, setTimeLeft] = useState<number | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [flashTeam, setFlashTeam] = useState<string | null>(null)
+  const prevTeamRef = useRef<string>('')
 
   useEffect(() => {
     setSessionId(localStorage.getItem('session_id'))
@@ -163,6 +165,17 @@ export default function GameClient({ code }: { code: string }) {
     setSubmittingClue(false)
   }
 
+  // Flash top bar on turn change
+  const currentTeam = game?.current_team ?? ''
+  useEffect(() => {
+    if (!currentTeam) return
+    if (prevTeamRef.current && prevTeamRef.current !== currentTeam) {
+      setFlashTeam(currentTeam)
+      const t = setTimeout(() => setFlashTeam(null), 800)
+    }
+    prevTeamRef.current = currentTeam
+  }, [currentTeam])
+
   if (!game || !player || cards.length === 0) {
     return (
       <main className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
@@ -175,18 +188,6 @@ export default function GameClient({ code }: { code: string }) {
   const isSpymaster = player.role === 'spymaster'
   const isOperative = player.role === 'operative'
   const gameOver = !!game.winner
-
-  // Flash top bar on turn change
-  const [flashTeam, setFlashTeam] = useState<string | null>(null)
-  const prevTeamRef = useRef<string>(game.current_team)
-  useEffect(() => {
-    if (prevTeamRef.current !== game.current_team) {
-      setFlashTeam(game.current_team)
-      const t = setTimeout(() => setFlashTeam(null), 800)
-      prevTeamRef.current = game.current_team
-      return () => clearTimeout(t)
-    }
-  }, [game.current_team])
 
   const topBarFlash = flashTeam === 'red'
     ? 'animate-flash-red'
