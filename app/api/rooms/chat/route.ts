@@ -3,7 +3,7 @@ import { createServerClient } from '@/lib/supabase-server'
 import { supabase as anonClient } from '@/lib/supabase'
 
 export async function POST(req: NextRequest) {
-  const { room_code, session_id, message, scope } = await req.json()
+  const { room_code, session_id, message, scope, sender_name } = await req.json()
 
   if (!room_code || !session_id || !message?.trim()) {
     return Response.json({ error: 'room_code, session_id, message required' }, { status: 400 })
@@ -30,14 +30,17 @@ export async function POST(req: NextRequest) {
     .eq('session_id', session_id)
     .maybeSingle()
 
-  if (!player) return Response.json({ error: 'Not in this game' }, { status: 403 })
+  // Non-players may chat as clearly-tagged spectators
+  const sender = player
+    ? player.display_name
+    : `${String(sender_name ?? '').trim().slice(0, 20) || 'Spectator'} 👁`
 
   await anonClient.channel(`chat:${room_code}`).send({
     type: 'broadcast',
     event: 'chat_message',
     payload: {
-      sender: player.display_name,
-      team: player.team,
+      sender,
+      team: player?.team ?? null,
       message: text,
       scope,
       ts: Date.now(),

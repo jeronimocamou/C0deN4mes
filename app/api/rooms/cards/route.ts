@@ -22,14 +22,13 @@ export async function POST(req: NextRequest) {
   // only a lobby-state game has no board to show.
   if (game.status === 'lobby') return Response.json({ error: 'Game not started' }, { status: 409 })
 
+  // Non-players get a read-only spectator view (operative-level: no key)
   const { data: player } = await supabase
     .from('game_players')
     .select('role, team, role_locked_at, is_host')
     .eq('game_id', game.id)
     .eq('session_id', session_id)
     .maybeSingle()
-
-  if (!player) return Response.json({ error: 'Player not found in this game' }, { status: 403 })
 
   const { data: cards } = await supabase
     .from('cards')
@@ -39,7 +38,7 @@ export async function POST(req: NextRequest) {
 
   if (!cards) return Response.json({ error: 'Failed to load cards' }, { status: 500 })
 
-  const isSpymaster = player.role === 'spymaster'
+  const isSpymaster = player?.role === 'spymaster'
   const isFinished = game.status === 'finished'
 
   // Strip color from unrevealed cards for operatives; once the game ends
@@ -64,6 +63,8 @@ export async function POST(req: NextRequest) {
         ? { word: game.clue_word, count: game.clue_count, team: game.clue_team }
         : null,
     },
-    player: { role: player.role, team: player.team, is_host: player.is_host },
+    player: player
+      ? { role: player.role, team: player.team, is_host: player.is_host }
+      : null,
   })
 }

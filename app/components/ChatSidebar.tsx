@@ -83,6 +83,8 @@ export default function ChatSidebar({ roomCode, sessionId, myTeam, onOpenChange 
         session_id: sessionId,
         message: input.trim(),
         scope: 'all',
+        // Only used by the server when the sender isn't a player (spectators)
+        sender_name: localStorage.getItem('display_name') ?? '',
       }),
     })
     setInput('')

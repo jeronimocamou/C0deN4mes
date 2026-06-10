@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { getOrCreateSessionId } from '@/lib/session'
 import ChatSidebar from '@/app/components/ChatSidebar'
 
 type Card = {
@@ -43,12 +44,10 @@ export default function GameClient({ code }: { code: string }) {
   const [flashTeam, setFlashTeam] = useState<string | null>(null)
   const prevTeamRef = useRef<string>('')
   const [chatOpen, setChatOpen] = useState(false)
-  const [notInGame, setNotInGame] = useState(false)
 
   useEffect(() => {
-    const sid = localStorage.getItem('session_id')
-    if (sid) setSessionId(sid)
-    else setNotInGame(true)
+    // Visitors without a session still get one so they can spectate + chat
+    setSessionId(getOrCreateSessionId())
   }, [])
 
   const fetchCards = useCallback(async (sid: string) => {
@@ -59,7 +58,6 @@ export default function GameClient({ code }: { code: string }) {
     })
     // 409 means the game is back in the lobby (host reset it)
     if (res.status === 409) { router.push(`/room/${code}`); return }
-    if (res.status === 403) { setNotInGame(true); return }
     if (!res.ok) return
     const data = await res.json()
     setCards(data.cards)
@@ -201,26 +199,7 @@ export default function GameClient({ code }: { code: string }) {
     return () => { if (t) clearTimeout(t) }
   }, [currentTeam])
 
-  if (notInGame) {
-    return (
-      <main className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center gap-4 px-4">
-        <p className="font-mono text-zinc-400 text-center">
-          You&apos;re not part of this game.
-        </p>
-        <p className="font-mono text-xs text-zinc-600 text-center">
-          games in progress can&apos;t be joined — ask for a new room code
-        </p>
-        <button
-          onClick={() => router.push('/')}
-          className="font-mono text-sm bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white px-6 py-3 rounded-xl transition-colors"
-        >
-          Go to Home →
-        </button>
-      </main>
-    )
-  }
-
-  if (!game || !player || cards.length === 0) {
+  if (!game || cards.length === 0) {
     return (
       <main className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <p className="font-mono text-zinc-500 animate-pulse">Loading board…</p>
@@ -228,9 +207,11 @@ export default function GameClient({ code }: { code: string }) {
     )
   }
 
-  const isMyTurn = player.team === game.current_team
-  const isSpymaster = player.role === 'spymaster'
-  const isOperative = player.role === 'operative'
+  // No player row means this visitor is spectating: full live view, no actions
+  const isSpectator = player === null
+  const isMyTurn = player?.team === game.current_team
+  const isSpymaster = player?.role === 'spymaster'
+  const isOperative = player?.role === 'operative'
   const gameOver = !!game.winner
 
   const topBarFlash = flashTeam === 'red'
@@ -248,6 +229,9 @@ export default function GameClient({ code }: { code: string }) {
           <ScoreBar red={game.red_words_remaining} blue={game.blue_words_remaining} />
         </div>
         <div className="flex items-center gap-3">
+          {isSpectator && (
+            <span className="font-mono text-xs text-zinc-500">👁 spectating</span>
+          )}
           {timeLeft !== null && !gameOver && (
             <span className={`font-mono text-sm tabular-nums ${timeLeft <= 10 ? 'text-red-400' : 'text-zinc-400'}`}>
               {timeLeft}s
@@ -348,12 +332,14 @@ export default function GameClient({ code }: { code: string }) {
           {/* Waiting */}
           {!isMyTurn && (
             <p className="font-mono text-xs text-zinc-600 text-center">
-              waiting for {game.current_team} team…
+              {isSpectator
+                ? `spectating · ${game.current_team} team's turn`
+                : `waiting for ${game.current_team} team…`}
             </p>
           )}
           {isSpymaster && !isMyTurn && (
             <p className="font-mono text-xs text-zinc-700 text-center mt-1">
-              you are the {player.team} spymaster
+              you are the {player?.team} spymaster
             </p>
           )}
         </div>
