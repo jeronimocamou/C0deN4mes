@@ -11,7 +11,4 @@ alter table games
 --    service role key (bypasses RLS) and validates everything server-side.
 --    Block direct writes from browsers so players can't edit game_players rows
 --    themselves (e.g. switching their role to spymaster mid-game to see the key).
---
---    Uncomment after confirming the app code above is deployed:
---
--- revoke insert, update, delete on table game_players from anon, authenticated;
+revoke insert, update, delete on table game_players from anon, authenticated;
