@@ -15,9 +15,10 @@ type Props = {
   roomCode: string
   sessionId: string | null
   myTeam: string | null
+  onOpenChange?: (open: boolean) => void
 }
 
-export default function ChatSidebar({ roomCode, sessionId, myTeam }: Props) {
+export default function ChatSidebar({ roomCode, sessionId, myTeam, onOpenChange }: Props) {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
@@ -25,10 +26,12 @@ export default function ChatSidebar({ roomCode, sessionId, myTeam }: Props) {
   const [unread, setUnread] = useState(0)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const openRef = useRef(false)
 
   const addMessage = useCallback((msg: ChatMessage) => {
     setMessages(prev => [...prev.slice(-199), msg])
-    setUnread(prev => prev + 1)
+    // Only count as unread when the sidebar is closed
+    if (!openRef.current) setUnread(prev => prev + 1)
   }, [])
 
   // Realtime subscription
@@ -54,10 +57,12 @@ export default function ChatSidebar({ roomCode, sessionId, myTeam }: Props) {
     if (open) bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, open])
 
-  // Clear unread when opened
+  // Clear unread when opened, and let the parent shift its layout
   useEffect(() => {
+    openRef.current = open
     if (open) setUnread(0)
-  }, [open])
+    onOpenChange?.(open)
+  }, [open, onOpenChange])
 
   // Focus input when opened
   useEffect(() => {

@@ -41,6 +41,7 @@ export default function GameClient({ code }: { code: string }) {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const [flashTeam, setFlashTeam] = useState<string | null>(null)
   const prevTeamRef = useRef<string>('')
+  const [chatOpen, setChatOpen] = useState(false)
 
   useEffect(() => {
     setSessionId(localStorage.getItem('session_id'))
@@ -52,16 +53,25 @@ export default function GameClient({ code }: { code: string }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ room_code: code, session_id: sid }),
     })
+    // 409 means the game is back in the lobby (host reset it)
+    if (res.status === 409) { router.push(`/room/${code}`); return }
     if (!res.ok) return
     const data = await res.json()
     setCards(data.cards)
     setGame(data.game)
     setPlayer(data.player)
-  }, [code])
+  }, [code, router])
 
   useEffect(() => {
     if (!sessionId) return
     fetchCards(sessionId)
+  }, [sessionId, fetchCards])
+
+  // Polling fallback in case realtime events are missed
+  useEffect(() => {
+    if (!sessionId) return
+    const id = setInterval(() => fetchCards(sessionId), 4000)
+    return () => clearInterval(id)
   }, [sessionId, fetchCards])
 
   // Turn timer
@@ -109,9 +119,15 @@ export default function GameClient({ code }: { code: string }) {
       .on('broadcast', { event: 'clue_given' }, ({ payload }) => {
         setClue(payload as Clue)
       })
+      .on('broadcast', { event: 'board_update' }, () => {
+        fetchCards(sessionId)
+      })
+      .on('broadcast', { event: 'game_reset' }, () => {
+        router.push(`/room/${code}`)
+      })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [sessionId, code, fetchCards])
+  }, [sessionId, code, fetchCards, router])
 
   async function handleReveal(card: Card) {
     if (!sessionId || card.is_revealed || revealingId) return
@@ -169,11 +185,13 @@ export default function GameClient({ code }: { code: string }) {
   const currentTeam = game?.current_team ?? ''
   useEffect(() => {
     if (!currentTeam) return
+    let t: ReturnType<typeof setTimeout> | undefined
     if (prevTeamRef.current && prevTeamRef.current !== currentTeam) {
       setFlashTeam(currentTeam)
-      const t = setTimeout(() => setFlashTeam(null), 800)
+      t = setTimeout(() => setFlashTeam(null), 800)
     }
     prevTeamRef.current = currentTeam
+    return () => { if (t) clearTimeout(t) }
   }, [currentTeam])
 
   if (!game || !player || cards.length === 0) {
@@ -196,7 +214,7 @@ export default function GameClient({ code }: { code: string }) {
     : ''
 
   return (
-    <main className="h-screen bg-[#0a0a0a] text-white flex flex-col overflow-hidden">
+    <main className={`h-screen bg-[#0a0a0a] text-white flex flex-col overflow-hidden transition-[padding] ${chatOpen ? 'sm:pr-72' : ''}`}>
       {/* Top bar */}
       <div className={`flex items-center justify-between px-4 py-3 border-b border-zinc-800 transition-colors ${topBarFlash}`}>
         <div className="flex items-center gap-4">
@@ -314,7 +332,7 @@ export default function GameClient({ code }: { code: string }) {
           )}
         </div>
       )}
-      <ChatSidebar roomCode={code} sessionId={sessionId} myTeam={player?.team ?? null} />
+      <ChatSidebar roomCode={code} sessionId={sessionId} myTeam={player?.team ?? null} onOpenChange={setChatOpen} />
     </main>
   )
 }

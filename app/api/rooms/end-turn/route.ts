@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
+import { supabase as anonClient } from '@/lib/supabase'
 
 export async function POST(req: NextRequest) {
   const { room_code, session_id } = await req.json()
@@ -34,6 +35,12 @@ export async function POST(req: NextRequest) {
     .from('games')
     .update({ current_team: nextTeam, turn_started_at: new Date().toISOString() })
     .eq('id', game.id)
+
+  await anonClient.channel(`room:${room_code}`).send({
+    type: 'broadcast',
+    event: 'board_update',
+    payload: { next_team: nextTeam },
+  })
 
   return Response.json({ ok: true, next_team: nextTeam })
 }

@@ -18,7 +18,9 @@ export async function POST(req: NextRequest) {
     .maybeSingle()
 
   if (!game) return Response.json({ error: 'Room not found' }, { status: 404 })
-  if (game.status !== 'active') return Response.json({ error: 'Game not active' }, { status: 409 })
+  // Finished games stay viewable so the final reveal and winner banner render;
+  // only a lobby-state game has no board to show.
+  if (game.status === 'lobby') return Response.json({ error: 'Game not started' }, { status: 409 })
 
   const { data: player } = await supabase
     .from('game_players')

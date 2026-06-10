@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
+import { supabase as anonClient } from '@/lib/supabase'
 
 export async function POST(req: NextRequest) {
   const { room_code, session_id, card_id } = await req.json()
@@ -54,23 +55,18 @@ export async function POST(req: NextRequest) {
     // Revealing the assassin loses immediately
     winner = game.current_team === 'red' ? 'blue' : 'red'
     newStatus = 'finished'
-  } else if (color === 'red') {
-    redRemaining -= 1
-    if (redRemaining === 0) { winner = 'red'; newStatus = 'finished' }
-    if (game.current_team === 'blue') nextTeam = 'blue' // wrong team card ends turn
-    // red team guessed red — stays their turn (nextTeam stays 'red')
-  } else if (color === 'blue') {
-    blueRemaining -= 1
-    if (blueRemaining === 0) { winner = 'blue'; newStatus = 'finished' }
-    if (game.current_team === 'red') nextTeam = 'red' // wrong team card ends turn
   } else {
-    // neutral — always ends the turn
-    nextTeam = game.current_team === 'red' ? 'blue' : 'red'
-  }
-
-  // Fix turn-switching logic: wrong color OR neutral ends turn
-  if (color !== game.current_team && color !== 'assassin') {
-    nextTeam = game.current_team === 'red' ? 'blue' : 'red'
+    if (color === 'red') {
+      redRemaining -= 1
+      if (redRemaining === 0) { winner = 'red'; newStatus = 'finished' }
+    } else if (color === 'blue') {
+      blueRemaining -= 1
+      if (blueRemaining === 0) { winner = 'blue'; newStatus = 'finished' }
+    }
+    // Any card that isn't the guessing team's color ends the turn
+    if (color !== game.current_team) {
+      nextTeam = game.current_team === 'red' ? 'blue' : 'red'
+    }
   }
 
   const now = new Date().toISOString()
@@ -86,6 +82,13 @@ export async function POST(req: NextRequest) {
   }
 
   await supabase.from('games').update(updates).eq('id', game.id)
+
+  // Push the reveal to every client so the tile flips with its true color
+  await anonClient.channel(`room:${room_code}`).send({
+    type: 'broadcast',
+    event: 'board_update',
+    payload: { card_id, color, winner, next_team: nextTeam },
+  })
 
   // Record stats when game ends
   if (winner) {

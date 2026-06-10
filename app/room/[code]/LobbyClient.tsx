@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import ChatSidebar from '@/app/components/ChatSidebar'
 
@@ -25,11 +26,18 @@ export default function LobbyClient({ code }: { code: string }) {
   const [myPlayerId, setMyPlayerId] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [starting, setStarting] = useState(false)
+  const [chatOpen, setChatOpen] = useState(false)
+  const channelRef = useRef<RealtimeChannel | null>(null)
 
   // Load session from localStorage
   useEffect(() => {
     setSessionId(localStorage.getItem('session_id'))
   }, [])
+
+  // Prefetch the board so the lobby → game transition is instant
+  useEffect(() => {
+    router.prefetch(`/room/${code}/game`)
+  }, [router, code])
 
   // Fetch game + players
   const fetchGame = useCallback(async () => {
@@ -68,6 +76,12 @@ export default function LobbyClient({ code }: { code: string }) {
     fetchGame()
   }, [fetchGame])
 
+  // Polling fallback so the lobby stays fresh even if realtime events are missed
+  useEffect(() => {
+    const id = setInterval(fetchGame, 3000)
+    return () => clearInterval(id)
+  }, [fetchGame])
+
   useEffect(() => {
     if (!gameId) return
 
@@ -91,9 +105,19 @@ export default function LobbyClient({ code }: { code: string }) {
         setGameStatus(status)
         if (status === 'active') router.push(`/room/${code}/game`)
       })
+      .on('broadcast', { event: 'lobby_update' }, () => {
+        fetchGame()
+      })
+      .on('broadcast', { event: 'game_started' }, () => {
+        router.push(`/room/${code}/game`)
+      })
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    channelRef.current = channel
+    return () => {
+      channelRef.current = null
+      supabase.removeChannel(channel)
+    }
   }, [gameId, code, fetchGame, router])
 
   async function updateMyRole(field: 'team' | 'role', value: string) {
@@ -105,6 +129,8 @@ export default function LobbyClient({ code }: { code: string }) {
       .update(update)
       .eq('id', myPlayerId)
     fetchGame()
+    // Tell other lobby clients to refetch right away
+    channelRef.current?.send({ type: 'broadcast', event: 'lobby_update', payload: {} })
   }
 
   async function handleStartGame() {
@@ -144,7 +170,7 @@ export default function LobbyClient({ code }: { code: string }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
+    <div className={`min-h-screen bg-[#0a0a0a] text-white transition-[padding] ${chatOpen ? 'sm:pr-72' : ''}`}>
     <main className="px-4 py-10 max-w-3xl mx-auto">
       {/* Header */}
       <div className="text-center mb-10">
@@ -215,7 +241,7 @@ export default function LobbyClient({ code }: { code: string }) {
         <p className="mt-6 font-mono text-xs text-zinc-700 text-center">waiting for host to start…</p>
       )}
 
-      <ChatSidebar roomCode={code} sessionId={sessionId} myTeam={me?.team ?? null} />
+      <ChatSidebar roomCode={code} sessionId={sessionId} myTeam={me?.team ?? null} onOpenChange={setChatOpen} />
     </main>
     </div>
   )

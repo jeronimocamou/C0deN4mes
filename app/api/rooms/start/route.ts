@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
+import { supabase as anonClient } from '@/lib/supabase'
 
 // Fisher-Yates shuffle
 function shuffle<T>(arr: T[]): T[] {
@@ -110,6 +111,13 @@ export async function POST(req: NextRequest) {
     .eq('id', game.id)
 
   if (gameError) return Response.json({ error: gameError.message }, { status: 500 })
+
+  // Notify lobby clients immediately (postgres_changes alone is unreliable)
+  await anonClient.channel(`room:${room_code}`).send({
+    type: 'broadcast',
+    event: 'game_started',
+    payload: {},
+  })
 
   return Response.json({ ok: true })
 }
