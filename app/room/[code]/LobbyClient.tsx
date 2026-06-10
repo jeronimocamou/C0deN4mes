@@ -77,14 +77,16 @@ export default function LobbyClient({ code }: { code: string }) {
         event: '*',
         schema: 'public',
         table: 'game_players',
-        filter: `game_id=eq.${gameId}`,
-      }, () => { fetchGame() })
+      }, (payload) => {
+        const row = (payload.new ?? payload.old) as { game_id?: string } | null
+        if (row?.game_id === gameId) fetchGame()
+      })
       .on('postgres_changes', {
         event: 'UPDATE',
         schema: 'public',
         table: 'games',
-        filter: `id=eq.${gameId}`,
       }, (payload) => {
+        if (payload.new.id !== gameId) return
         const status = payload.new.status as GameStatus
         setGameStatus(status)
         if (status === 'active') router.push(`/room/${code}/game`)
@@ -116,6 +118,8 @@ export default function LobbyClient({ code }: { code: string }) {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to start game')
+      // Host navigates immediately — don't wait for realtime
+      router.push(`/room/${code}/game`)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Unknown error')
       setStarting(false)

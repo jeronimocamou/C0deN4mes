@@ -77,18 +77,27 @@ export default function GameClient({ code }: { code: string }) {
   // Realtime subscription
   useEffect(() => {
     if (!sessionId) return
+    let gameId: string | null = null
+    // Grab gameId once so we can filter realtime events
+    supabase.from('games').select('id').eq('room_code', code).maybeSingle()
+      .then(({ data }) => { if (data) gameId = data.id })
+
     const channel = supabase
       .channel(`room:${code}`)
       .on('postgres_changes', {
         event: 'UPDATE',
         schema: 'public',
         table: 'cards',
-      }, () => { fetchCards(sessionId) })
+      }, (payload) => {
+        if (gameId && payload.new.game_id !== gameId) return
+        fetchCards(sessionId)
+      })
       .on('postgres_changes', {
         event: 'UPDATE',
         schema: 'public',
         table: 'games',
       }, (payload) => {
+        if (gameId && payload.new.id !== gameId) return
         if (payload.new.status === 'lobby') {
           router.push(`/room/${code}`)
         } else {
