@@ -7,6 +7,14 @@ import { getOrCreateSessionId } from '@/lib/session'
 import Logo from '@/app/components/Logo'
 import RulesModal from '@/app/components/RulesModal'
 
+// Reads a JSON body without throwing on empty/non-JSON responses (e.g. a
+// crashed route returns an empty 500 body), so callers see a real message.
+async function readJson(res: Response): Promise<{ error?: string; [k: string]: unknown }> {
+  const text = await res.text()
+  if (!text) return {}
+  try { return JSON.parse(text) } catch { return { error: text.slice(0, 200) } }
+}
+
 export default function HomeClient() {
   const router = useRouter()
   const [displayName, setDisplayName] = useState('')
@@ -45,8 +53,8 @@ export default function HomeClient() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ session_id: sessionId, display_name: displayName.trim() }),
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to create room')
+      const data = await readJson(res)
+      if (!res.ok) throw new Error(data.error || `Server error (${res.status})`)
       router.push(`/room/${data.room_code}`)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Unknown error')
@@ -67,8 +75,8 @@ export default function HomeClient() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ session_id: sessionId, display_name: displayName.trim(), room_code: code }),
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to join room')
+      const data = await readJson(res)
+      if (!res.ok) throw new Error(data.error || `Server error (${res.status})`)
       router.push(`/room/${code}`)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Unknown error')
