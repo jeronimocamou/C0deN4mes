@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createBrowserSupabase } from '@/lib/supabase-browser'
 import { getOrCreateSessionId } from '@/lib/session'
 import Logo from '@/app/components/Logo'
+import RulesModal from '@/app/components/RulesModal'
 
 export default function HomeClient() {
   const router = useRouter()
@@ -13,6 +14,7 @@ export default function HomeClient() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState<'create' | 'join' | null>(null)
   const [userEmail, setUserEmail] = useState<string | null>(null)
+  const [showRules, setShowRules] = useState(false)
   const nameRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -148,6 +150,14 @@ export default function HomeClient() {
         {error && (
           <p className="font-mono text-xs text-red-400 text-center">{error}</p>
         )}
+
+        {/* Rules */}
+        <button
+          onClick={() => setShowRules(true)}
+          className="w-full font-mono text-xs text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-500 py-2.5 rounded-lg transition-colors"
+        >
+          📖 Rules
+        </button>
       </div>
 
       <div className="mt-8 font-mono text-xs text-zinc-600 flex items-center gap-3">
@@ -171,6 +181,8 @@ export default function HomeClient() {
           </>
         )}
       </div>
+
+      {showRules && <RulesModal onClose={() => setShowRules(false)} />}
     </main>
   )
 }
