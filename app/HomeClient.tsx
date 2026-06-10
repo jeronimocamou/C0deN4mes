@@ -3,16 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserSupabase } from '@/lib/supabase-browser'
+import { getOrCreateSessionId } from '@/lib/session'
 import Logo from '@/app/components/Logo'
-
-function getOrCreateSessionId(): string {
-  let id = localStorage.getItem('session_id')
-  if (!id) {
-    id = crypto.randomUUID()
-    localStorage.setItem('session_id', id)
-  }
-  return id
-}
 
 export default function HomeClient() {
   const router = useRouter()

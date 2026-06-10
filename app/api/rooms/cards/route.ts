@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
 
   const { data: game } = await supabase
     .from('games')
-    .select('id, status, current_team, winner, turn_started_at, red_words_remaining, blue_words_remaining')
+    .select('id, status, current_team, winner, turn_started_at, red_words_remaining, blue_words_remaining, clue_word, clue_count, clue_team')
     .eq('room_code', room_code)
     .maybeSingle()
 
@@ -40,14 +40,16 @@ export async function POST(req: NextRequest) {
   if (!cards) return Response.json({ error: 'Failed to load cards' }, { status: 500 })
 
   const isSpymaster = player.role === 'spymaster'
+  const isFinished = game.status === 'finished'
 
-  // Strip color from unrevealed cards for operatives
+  // Strip color from unrevealed cards for operatives; once the game ends
+  // everyone gets the full key.
   const safeCards = cards.map(c => ({
     id: c.id,
     word: c.word,
     position: c.position,
     is_revealed: c.is_revealed,
-    color: isSpymaster || c.is_revealed ? c.color : null,
+    color: isSpymaster || isFinished || c.is_revealed ? c.color : null,
   }))
 
   return Response.json({
@@ -58,6 +60,9 @@ export async function POST(req: NextRequest) {
       turn_started_at: game.turn_started_at,
       red_words_remaining: game.red_words_remaining,
       blue_words_remaining: game.blue_words_remaining,
+      clue: game.clue_word
+        ? { word: game.clue_word, count: game.clue_count, team: game.clue_team }
+        : null,
     },
     player: { role: player.role, team: player.team, is_host: player.is_host },
   })

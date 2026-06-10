@@ -33,7 +33,13 @@ export async function POST(req: NextRequest) {
 
   await supabase
     .from('games')
-    .update({ current_team: nextTeam, turn_started_at: new Date().toISOString() })
+    .update({
+      current_team: nextTeam,
+      turn_started_at: new Date().toISOString(),
+      clue_word: null,
+      clue_count: null,
+      clue_team: null,
+    })
     .eq('id', game.id)
 
   await anonClient.channel(`room:${room_code}`).send({

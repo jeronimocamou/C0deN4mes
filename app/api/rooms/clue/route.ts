@@ -30,11 +30,25 @@ export async function POST(req: NextRequest) {
   if (player.role !== 'spymaster') return Response.json({ error: 'Only spymasters can give clues' }, { status: 403 })
   if (player.team !== game.current_team) return Response.json({ error: "Not your team's turn" }, { status: 403 })
 
-  // Broadcast the clue via Supabase Realtime
+  const clueWord = String(word).trim().toUpperCase().slice(0, 30)
+  const clueCount = Math.max(0, Math.min(9, Math.floor(Number(count)) || 0))
+  if (!clueWord || /\s/.test(clueWord)) {
+    return Response.json({ error: 'Clue must be a single word' }, { status: 400 })
+  }
+
+  // Persist so refreshes and late joiners still see the current clue
+  const { error: updateError } = await supabase
+    .from('games')
+    .update({ clue_word: clueWord, clue_count: clueCount, clue_team: player.team })
+    .eq('id', game.id)
+
+  if (updateError) return Response.json({ error: updateError.message }, { status: 500 })
+
+  // Broadcast for instant delivery
   await anonClient.channel(`room:${room_code}`).send({
     type: 'broadcast',
     event: 'clue_given',
-    payload: { word: word.trim().toUpperCase(), count: Number(count), team: player.team },
+    payload: { word: clueWord, count: clueCount, team: player.team },
   })
 
   return Response.json({ ok: true })

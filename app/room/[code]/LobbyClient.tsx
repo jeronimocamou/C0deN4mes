@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { getOrCreateSessionId } from '@/lib/session'
 import ChatSidebar from '@/app/components/ChatSidebar'
 
 type Player = {
@@ -23,15 +23,18 @@ export default function LobbyClient({ code }: { code: string }) {
   const [gameId, setGameId] = useState<string | null>(null)
   const [gameStatus, setGameStatus] = useState<GameStatus>('lobby')
   const [sessionId, setSessionId] = useState<string | null>(null)
-  const [myPlayerId, setMyPlayerId] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [starting, setStarting] = useState(false)
   const [chatOpen, setChatOpen] = useState(false)
-  const channelRef = useRef<RealtimeChannel | null>(null)
+  const [loaded, setLoaded] = useState(false)
+  const [joinName, setJoinName] = useState('')
+  const [joining, setJoining] = useState(false)
+  const [joinError, setJoinError] = useState('')
 
   // Load session from localStorage
   useEffect(() => {
     setSessionId(localStorage.getItem('session_id'))
+    setJoinName(localStorage.getItem('display_name') ?? '')
   }, [])
 
   // Prefetch the board so the lobby → game transition is instant
@@ -62,14 +65,8 @@ export default function LobbyClient({ code }: { code: string }) {
       .eq('game_id', game.id)
 
     setPlayers(rows ?? [])
+    setLoaded(true)
   }, [code, router])
-
-  // Resolve my player id once session + players are known
-  useEffect(() => {
-    if (!sessionId || players.length === 0) return
-    const me = players.find(p => p.session_id === sessionId)
-    if (me) setMyPlayerId(me.id)
-  }, [sessionId, players])
 
   // Initial fetch + realtime subscription
   useEffect(() => {
@@ -113,24 +110,43 @@ export default function LobbyClient({ code }: { code: string }) {
       })
       .subscribe()
 
-    channelRef.current = channel
-    return () => {
-      channelRef.current = null
-      supabase.removeChannel(channel)
-    }
+    return () => { supabase.removeChannel(channel) }
   }, [gameId, code, fetchGame, router])
 
+  // Server validates and broadcasts lobby_update to everyone else
   async function updateMyRole(field: 'team' | 'role', value: string) {
-    if (!myPlayerId) return
-    // Switching teams resets role so you re-pick on the new team
-    const update = field === 'team' ? { team: value, role: null } : { role: value }
-    await supabase
-      .from('game_players')
-      .update(update)
-      .eq('id', myPlayerId)
+    if (!sessionId) return
+    await fetch('/api/rooms/update-player', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ room_code: code, session_id: sessionId, [field]: value }),
+    })
     fetchGame()
-    // Tell other lobby clients to refetch right away
-    channelRef.current?.send({ type: 'broadcast', event: 'lobby_update', payload: {} })
+  }
+
+  // Visitors who opened the room link without joining can join in place
+  async function handleJoinRoom(e: React.FormEvent) {
+    e.preventDefault()
+    if (!joinName.trim() || joining) return
+    setJoining(true)
+    setJoinError('')
+    try {
+      const sid = getOrCreateSessionId()
+      localStorage.setItem('display_name', joinName.trim())
+      const res = await fetch('/api/rooms/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sid, display_name: joinName.trim(), room_code: code }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to join room')
+      setSessionId(sid)
+      fetchGame()
+    } catch (e: unknown) {
+      setJoinError(e instanceof Error ? e.message : 'Unknown error')
+    } finally {
+      setJoining(false)
+    }
   }
 
   async function handleStartGame() {
@@ -178,6 +194,33 @@ export default function LobbyClient({ code }: { code: string }) {
         <h1 className="font-mono text-5xl font-bold tracking-widest text-white">{code}</h1>
         <p className="mt-2 font-mono text-xs text-zinc-600">share this code with friends</p>
       </div>
+
+      {/* Join prompt for visitors who opened the link without joining */}
+      {loaded && !me && (
+        <div className="mb-6 bg-zinc-900 border border-zinc-700 rounded-xl p-5">
+          <p className="font-mono text-xs text-zinc-400 uppercase tracking-wider mb-3">
+            enter your name to join this room
+          </p>
+          <form onSubmit={handleJoinRoom} className="flex gap-2">
+            <input
+              type="text"
+              placeholder="e.g. Agent X"
+              value={joinName}
+              onChange={e => setJoinName(e.target.value)}
+              maxLength={20}
+              className="flex-1 min-w-0 bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2.5 text-white font-mono text-sm placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+            />
+            <button
+              type="submit"
+              disabled={joining || !joinName.trim()}
+              className="bg-white text-black font-mono text-sm font-bold px-5 py-2.5 rounded-lg disabled:opacity-40 hover:bg-zinc-200 transition-colors"
+            >
+              {joining ? '…' : 'Join'}
+            </button>
+          </form>
+          {joinError && <p className="font-mono text-xs text-red-400 mt-2">{joinError}</p>}
+        </div>
+      )}
 
       {/* Teams */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
@@ -237,7 +280,7 @@ export default function LobbyClient({ code }: { code: string }) {
         </div>
       )}
 
-      {!me?.is_host && (
+      {me && !me.is_host && (
         <p className="mt-6 font-mono text-xs text-zinc-700 text-center">waiting for host to start…</p>
       )}
 
