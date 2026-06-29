@@ -52,6 +52,3 @@ There are five main tables:
 
 Security on the database is handled with row-level security policies, which control exactly what data anyone is allowed to read or change directly, separate from whatever the application code allows.
 
-## Status
-
-The core game is playable — room creation, joining, team/role selection, the live board, and turn-based guessing all work. Still being added: persistent accounts with saved stats, custom word pack uploads, and a chat/reaction system for players during games.

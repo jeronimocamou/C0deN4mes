@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
+import { supabase as anonClient } from '@/lib/supabase'
 
 export async function POST(req: NextRequest) {
   const { room_code, session_id } = await req.json()
@@ -45,8 +46,18 @@ export async function POST(req: NextRequest) {
       turn_started_at: null,
       red_words_remaining: 9,
       blue_words_remaining: 8,
+      clue_word: null,
+      clue_count: null,
+      clue_team: null,
     })
     .eq('id', game.id)
+
+  // Send everyone on the board back to the lobby
+  await anonClient.channel(`room:${room_code}`).send({
+    type: 'broadcast',
+    event: 'game_reset',
+    payload: {},
+  })
 
   return Response.json({ ok: true })
 }

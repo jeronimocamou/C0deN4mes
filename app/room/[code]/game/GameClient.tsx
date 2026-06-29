@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { getOrCreateSessionId } from '@/lib/session'
 import ChatSidebar from '@/app/components/ChatSidebar'
 
 type Card = {
@@ -19,6 +20,7 @@ type GameState = {
   turn_started_at: string | null
   red_words_remaining: number
   blue_words_remaining: number
+  clue: Clue
 }
 
 type PlayerInfo = { role: string; team: string; is_host: boolean }
@@ -41,9 +43,12 @@ export default function GameClient({ code }: { code: string }) {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const [flashTeam, setFlashTeam] = useState<string | null>(null)
   const prevTeamRef = useRef<string>('')
+  const [chatOpen, setChatOpen] = useState(false)
+  const [overlayDismissed, setOverlayDismissed] = useState(false)
 
   useEffect(() => {
-    setSessionId(localStorage.getItem('session_id'))
+    // Visitors without a session still get one so they can spectate + chat
+    setSessionId(getOrCreateSessionId())
   }, [])
 
   const fetchCards = useCallback(async (sid: string) => {
@@ -52,16 +57,27 @@ export default function GameClient({ code }: { code: string }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ room_code: code, session_id: sid }),
     })
+    // 409 means the game is back in the lobby (host reset it)
+    if (res.status === 409) { router.push(`/room/${code}`); return }
     if (!res.ok) return
     const data = await res.json()
     setCards(data.cards)
     setGame(data.game)
     setPlayer(data.player)
-  }, [code])
+    // Server is the source of truth for the current clue
+    setClue(data.game.clue ?? null)
+  }, [code, router])
 
   useEffect(() => {
     if (!sessionId) return
     fetchCards(sessionId)
+  }, [sessionId, fetchCards])
+
+  // Polling fallback in case realtime events are missed
+  useEffect(() => {
+    if (!sessionId) return
+    const id = setInterval(() => fetchCards(sessionId), 4000)
+    return () => clearInterval(id)
   }, [sessionId, fetchCards])
 
   // Turn timer
@@ -109,9 +125,15 @@ export default function GameClient({ code }: { code: string }) {
       .on('broadcast', { event: 'clue_given' }, ({ payload }) => {
         setClue(payload as Clue)
       })
+      .on('broadcast', { event: 'board_update' }, () => {
+        fetchCards(sessionId)
+      })
+      .on('broadcast', { event: 'game_reset' }, () => {
+        router.push(`/room/${code}`)
+      })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [sessionId, code, fetchCards])
+  }, [sessionId, code, fetchCards, router])
 
   async function handleReveal(card: Card) {
     if (!sessionId || card.is_revealed || revealingId) return
@@ -169,24 +191,34 @@ export default function GameClient({ code }: { code: string }) {
   const currentTeam = game?.current_team ?? ''
   useEffect(() => {
     if (!currentTeam) return
+    let t: ReturnType<typeof setTimeout> | undefined
     if (prevTeamRef.current && prevTeamRef.current !== currentTeam) {
       setFlashTeam(currentTeam)
-      const t = setTimeout(() => setFlashTeam(null), 800)
+      t = setTimeout(() => setFlashTeam(null), 800)
     }
     prevTeamRef.current = currentTeam
+    return () => { if (t) clearTimeout(t) }
   }, [currentTeam])
 
-  if (!game || !player || cards.length === 0) {
+  // New game (Play Again) → the win overlay should show again next time
+  const winnerForOverlay = game?.winner ?? null
+  useEffect(() => {
+    if (!winnerForOverlay) setOverlayDismissed(false)
+  }, [winnerForOverlay])
+
+  if (!game || cards.length === 0) {
     return (
       <main className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <p className="font-mono text-zinc-500 animate-pulse">Loading board…</p>
+        <p className="font-mono text-zinc-400 animate-pulse">Loading board…</p>
       </main>
     )
   }
 
-  const isMyTurn = player.team === game.current_team
-  const isSpymaster = player.role === 'spymaster'
-  const isOperative = player.role === 'operative'
+  // No player row means this visitor is spectating: full live view, no actions
+  const isSpectator = player === null
+  const isMyTurn = player?.team === game.current_team
+  const isSpymaster = player?.role === 'spymaster'
+  const isOperative = player?.role === 'operative'
   const gameOver = !!game.winner
 
   const topBarFlash = flashTeam === 'red'
@@ -196,14 +228,17 @@ export default function GameClient({ code }: { code: string }) {
     : ''
 
   return (
-    <main className="h-screen bg-[#0a0a0a] text-white flex flex-col overflow-hidden">
+    <main className={`h-screen bg-[#0a0a0a] text-white flex flex-col overflow-hidden transition-[padding] ${chatOpen ? 'sm:pr-72' : ''}`}>
       {/* Top bar */}
       <div className={`flex items-center justify-between px-4 py-3 border-b border-zinc-800 transition-colors ${topBarFlash}`}>
         <div className="flex items-center gap-4">
-          <span className="font-mono text-xs text-zinc-500">{code}</span>
+          <span className="font-mono text-xs text-zinc-400">{code}</span>
           <ScoreBar red={game.red_words_remaining} blue={game.blue_words_remaining} />
         </div>
         <div className="flex items-center gap-3">
+          {isSpectator && (
+            <span className="font-mono text-xs text-zinc-400">👁 spectating</span>
+          )}
           {timeLeft !== null && !gameOver && (
             <span className={`font-mono text-sm tabular-nums ${timeLeft <= 10 ? 'text-red-400' : 'text-zinc-400'}`}>
               {timeLeft}s
@@ -220,10 +255,45 @@ export default function GameClient({ code }: { code: string }) {
         </div>
       )}
 
-      {/* Game over banner */}
-      {gameOver && (
+      {/* Game over — full-screen victory overlay */}
+      {gameOver && !overlayDismissed && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex flex-col items-center justify-center gap-10 px-4">
+          <h1
+            className={`font-mono font-black text-7xl sm:text-9xl text-center tracking-tight ${
+              game.winner === 'red' ? 'text-red-500' : 'text-blue-500'
+            }`}
+          >
+            {game.winner === 'red' ? 'Red Wins!' : 'Blue Wins!'}
+          </h1>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {player?.is_host && (
+              <button
+                onClick={handlePlayAgain}
+                className="bg-white text-black font-mono font-bold px-6 py-3 rounded-xl hover:bg-zinc-200 transition-colors"
+              >
+                Play Again
+              </button>
+            )}
+            <button
+              onClick={() => setOverlayDismissed(true)}
+              className="font-mono text-sm text-zinc-300 border border-zinc-600 hover:border-zinc-400 px-5 py-3 rounded-xl transition-colors"
+            >
+              View Board
+            </button>
+            <button
+              onClick={() => router.push('/')}
+              className="font-mono text-sm text-zinc-400 hover:text-white px-4 py-3 underline"
+            >
+              home
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Compact banner once the overlay is dismissed, so controls stay reachable */}
+      {gameOver && overlayDismissed && (
         <div className={`text-center py-3 font-mono font-bold text-lg ${game.winner === 'red' ? 'bg-red-900/40 text-red-300' : 'bg-blue-900/40 text-blue-300'}`}>
-          {game.winner?.toUpperCase()} TEAM WINS!
+          {game.winner === 'red' ? 'Red Wins!' : 'Blue Wins!'}
           <span className="ml-4 inline-flex gap-3 items-center">
             {player?.is_host && (
               <button
@@ -294,7 +364,7 @@ export default function GameClient({ code }: { code: string }) {
             <div className="flex justify-center">
               <button
                 onClick={handleEndTurn}
-                className="font-mono text-sm text-zinc-500 hover:text-white border border-zinc-700 hover:border-zinc-500 px-4 py-2 rounded-lg transition-colors"
+                className="font-mono text-sm text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-500 px-4 py-2 rounded-lg transition-colors"
               >
                 End Turn
               </button>
@@ -303,18 +373,20 @@ export default function GameClient({ code }: { code: string }) {
 
           {/* Waiting */}
           {!isMyTurn && (
-            <p className="font-mono text-xs text-zinc-600 text-center">
-              waiting for {game.current_team} team…
+            <p className="font-mono text-xs text-zinc-500 text-center">
+              {isSpectator
+                ? `spectating · ${game.current_team} team's turn`
+                : `waiting for ${game.current_team} team…`}
             </p>
           )}
           {isSpymaster && !isMyTurn && (
-            <p className="font-mono text-xs text-zinc-700 text-center mt-1">
-              you are the {player.team} spymaster
+            <p className="font-mono text-xs text-zinc-500 text-center mt-1">
+              you are the {player?.team} spymaster
             </p>
           )}
         </div>
       )}
-      <ChatSidebar roomCode={code} sessionId={sessionId} myTeam={player?.team ?? null} />
+      <ChatSidebar roomCode={code} sessionId={sessionId} myTeam={player?.team ?? null} onOpenChange={setChatOpen} />
     </main>
   )
 }
@@ -376,7 +448,7 @@ function ScoreBar({ red, blue }: { red: number; blue: number }) {
   return (
     <div className="flex items-center gap-2 font-mono text-sm">
       <span className="text-red-500 font-bold">{red}</span>
-      <span className="text-zinc-600">·</span>
+      <span className="text-zinc-500">·</span>
       <span className="text-blue-500 font-bold">{blue}</span>
     </div>
   )

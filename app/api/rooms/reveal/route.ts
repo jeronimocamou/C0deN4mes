@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
+import { supabase as anonClient } from '@/lib/supabase'
 
 export async function POST(req: NextRequest) {
   const { room_code, session_id, card_id } = await req.json()
@@ -29,24 +30,32 @@ export async function POST(req: NextRequest) {
   if (player.role !== 'operative') return Response.json({ error: 'Only operatives can reveal cards' }, { status: 403 })
   if (player.team !== game.current_team) return Response.json({ error: "Not your team's turn" }, { status: 403 })
 
-  const { data: card } = await supabase
+  // Atomic reveal: the is_revealed guard makes concurrent clicks on the same
+  // card a no-op for all but one request.
+  const { data: revealed } = await supabase
     .from('cards')
-    .select('id, color, is_revealed')
+    .update({ is_revealed: true })
     .eq('id', card_id)
     .eq('game_id', game.id)
-    .maybeSingle()
+    .eq('is_revealed', false)
+    .select('id, color')
 
-  if (!card) return Response.json({ error: 'Card not found' }, { status: 404 })
-  if (card.is_revealed) return Response.json({ error: 'Card already revealed' }, { status: 409 })
+  if (!revealed || revealed.length === 0) {
+    return Response.json({ error: 'Card already revealed' }, { status: 409 })
+  }
 
-  // Reveal the card
-  await supabase.from('cards').update({ is_revealed: true }).eq('id', card_id)
+  // Derive remaining counts from the cards table so racing reveals can't
+  // drift the counters.
+  const { data: unrevealed } = await supabase
+    .from('cards')
+    .select('color')
+    .eq('game_id', game.id)
+    .eq('is_revealed', false)
 
-  // Determine outcome
-  const color = card.color as string
+  const color = revealed[0].color as string
+  const redRemaining = unrevealed?.filter(c => c.color === 'red').length ?? game.red_words_remaining
+  const blueRemaining = unrevealed?.filter(c => c.color === 'blue').length ?? game.blue_words_remaining
   let nextTeam = game.current_team
-  let redRemaining = game.red_words_remaining
-  let blueRemaining = game.blue_words_remaining
   let winner: string | null = null
   let newStatus = 'active'
 
@@ -54,23 +63,13 @@ export async function POST(req: NextRequest) {
     // Revealing the assassin loses immediately
     winner = game.current_team === 'red' ? 'blue' : 'red'
     newStatus = 'finished'
-  } else if (color === 'red') {
-    redRemaining -= 1
-    if (redRemaining === 0) { winner = 'red'; newStatus = 'finished' }
-    if (game.current_team === 'blue') nextTeam = 'blue' // wrong team card ends turn
-    // red team guessed red — stays their turn (nextTeam stays 'red')
-  } else if (color === 'blue') {
-    blueRemaining -= 1
-    if (blueRemaining === 0) { winner = 'blue'; newStatus = 'finished' }
-    if (game.current_team === 'red') nextTeam = 'red' // wrong team card ends turn
   } else {
-    // neutral — always ends the turn
-    nextTeam = game.current_team === 'red' ? 'blue' : 'red'
-  }
-
-  // Fix turn-switching logic: wrong color OR neutral ends turn
-  if (color !== game.current_team && color !== 'assassin') {
-    nextTeam = game.current_team === 'red' ? 'blue' : 'red'
+    if (redRemaining === 0) { winner = 'red'; newStatus = 'finished' }
+    else if (blueRemaining === 0) { winner = 'blue'; newStatus = 'finished' }
+    // Any card that isn't the guessing team's color ends the turn
+    if (color !== game.current_team) {
+      nextTeam = game.current_team === 'red' ? 'blue' : 'red'
+    }
   }
 
   const now = new Date().toISOString()
@@ -83,9 +82,20 @@ export async function POST(req: NextRequest) {
   if (nextTeam !== game.current_team || newStatus === 'finished') {
     updates.current_team = nextTeam
     updates.turn_started_at = now
+    // The clue belongs to the turn that just ended
+    updates.clue_word = null
+    updates.clue_count = null
+    updates.clue_team = null
   }
 
   await supabase.from('games').update(updates).eq('id', game.id)
+
+  // Push the reveal to every client so the tile flips with its true color
+  await anonClient.channel(`room:${room_code}`).send({
+    type: 'broadcast',
+    event: 'board_update',
+    payload: { card_id, color, winner, next_team: nextTeam },
+  })
 
   // Record stats when game ends
   if (winner) {

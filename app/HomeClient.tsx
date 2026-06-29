@@ -3,15 +3,16 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserSupabase } from '@/lib/supabase-browser'
+import { getOrCreateSessionId } from '@/lib/session'
 import Logo from '@/app/components/Logo'
+import RulesModal from '@/app/components/RulesModal'
 
-function getOrCreateSessionId(): string {
-  let id = localStorage.getItem('session_id')
-  if (!id) {
-    id = crypto.randomUUID()
-    localStorage.setItem('session_id', id)
-  }
-  return id
+// Reads a JSON body without throwing on empty/non-JSON responses (e.g. a
+// crashed route returns an empty 500 body), so callers see a real message.
+async function readJson(res: Response): Promise<{ error?: string; [k: string]: unknown }> {
+  const text = await res.text()
+  if (!text) return {}
+  try { return JSON.parse(text) } catch { return { error: text.slice(0, 200) } }
 }
 
 export default function HomeClient() {
@@ -21,6 +22,7 @@ export default function HomeClient() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState<'create' | 'join' | null>(null)
   const [userEmail, setUserEmail] = useState<string | null>(null)
+  const [showRules, setShowRules] = useState(false)
   const nameRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -51,8 +53,8 @@ export default function HomeClient() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ session_id: sessionId, display_name: displayName.trim() }),
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to create room')
+      const data = await readJson(res)
+      if (!res.ok) throw new Error(data.error || `Server error (${res.status})`)
       router.push(`/room/${data.room_code}`)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Unknown error')
@@ -73,8 +75,8 @@ export default function HomeClient() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ session_id: sessionId, display_name: displayName.trim(), room_code: code }),
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to join room')
+      const data = await readJson(res)
+      if (!res.ok) throw new Error(data.error || `Server error (${res.status})`)
       router.push(`/room/${code}`)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Unknown error')
@@ -87,7 +89,7 @@ export default function HomeClient() {
       {/* Title */}
       <div className="mb-12 text-center">
         <Logo size="lg" />
-        <p className="mt-4 text-zinc-600 font-mono text-xs tracking-[0.3em] uppercase">
+        <p className="mt-4 text-zinc-500 font-mono text-xs tracking-[0.3em] uppercase">
           real-time multiplayer codenames
         </p>
       </div>
@@ -123,7 +125,7 @@ export default function HomeClient() {
         {/* Divider */}
         <div className="flex items-center gap-3">
           <div className="flex-1 h-px bg-zinc-800" />
-          <span className="font-mono text-xs text-zinc-600">or join</span>
+          <span className="font-mono text-xs text-zinc-500">or join</span>
           <div className="flex-1 h-px bg-zinc-800" />
         </div>
 
@@ -156,9 +158,17 @@ export default function HomeClient() {
         {error && (
           <p className="font-mono text-xs text-red-400 text-center">{error}</p>
         )}
+
+        {/* Rules */}
+        <button
+          onClick={() => setShowRules(true)}
+          className="w-full font-mono text-xs text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-500 py-2.5 rounded-lg transition-colors"
+        >
+          📖 Rules
+        </button>
       </div>
 
-      <div className="mt-8 font-mono text-xs text-zinc-600 flex items-center gap-3">
+      <div className="mt-8 font-mono text-xs text-zinc-500 flex items-center gap-3">
         {userEmail ? (
           <>
             <a href="/profile" className="hover:text-zinc-400 transition-colors underline">
@@ -179,6 +189,8 @@ export default function HomeClient() {
           </>
         )}
       </div>
+
+      {showRules && <RulesModal onClose={() => setShowRules(false)} />}
     </main>
   )
 }

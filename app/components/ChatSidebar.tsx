@@ -15,9 +15,10 @@ type Props = {
   roomCode: string
   sessionId: string | null
   myTeam: string | null
+  onOpenChange?: (open: boolean) => void
 }
 
-export default function ChatSidebar({ roomCode, sessionId, myTeam }: Props) {
+export default function ChatSidebar({ roomCode, sessionId, myTeam, onOpenChange }: Props) {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
@@ -25,10 +26,12 @@ export default function ChatSidebar({ roomCode, sessionId, myTeam }: Props) {
   const [unread, setUnread] = useState(0)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const openRef = useRef(false)
 
   const addMessage = useCallback((msg: ChatMessage) => {
     setMessages(prev => [...prev.slice(-199), msg])
-    setUnread(prev => prev + 1)
+    // Only count as unread when the sidebar is closed
+    if (!openRef.current) setUnread(prev => prev + 1)
   }, [])
 
   // Realtime subscription
@@ -54,10 +57,12 @@ export default function ChatSidebar({ roomCode, sessionId, myTeam }: Props) {
     if (open) bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, open])
 
-  // Clear unread when opened
+  // Clear unread when opened, and let the parent shift its layout
   useEffect(() => {
+    openRef.current = open
     if (open) setUnread(0)
-  }, [open])
+    onOpenChange?.(open)
+  }, [open, onOpenChange])
 
   // Focus input when opened
   useEffect(() => {
@@ -78,6 +83,8 @@ export default function ChatSidebar({ roomCode, sessionId, myTeam }: Props) {
         session_id: sessionId,
         message: input.trim(),
         scope: 'all',
+        // Only used by the server when the sender isn't a player (spectators)
+        sender_name: localStorage.getItem('display_name') ?? '',
       }),
     })
     setInput('')
@@ -107,13 +114,13 @@ export default function ChatSidebar({ roomCode, sessionId, myTeam }: Props) {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
             <span className="font-mono text-sm font-bold text-white">Chat</span>
-            <button onClick={() => setOpen(false)} className="text-zinc-500 hover:text-white font-mono text-xs">✕</button>
+            <button onClick={() => setOpen(false)} className="text-zinc-400 hover:text-white font-mono text-xs">✕</button>
           </div>
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2 min-h-0">
             {visibleMessages.length === 0 && (
-              <p className="font-mono text-xs text-zinc-700 text-center mt-4">
+              <p className="font-mono text-xs text-zinc-500 text-center mt-4">
                 No messages yet
               </p>
             )}
