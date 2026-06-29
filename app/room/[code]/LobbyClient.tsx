@@ -196,7 +196,7 @@ export default function LobbyClient({ code }: { code: string }) {
         <h1 className="font-mono text-5xl font-bold tracking-widest text-white">{code}</h1>
         <p className="mt-2 font-mono text-xs text-zinc-500">share this code with friends</p>
         <span className="mt-3 inline-block font-mono text-[10px] uppercase tracking-wider text-zinc-400 border border-zinc-700 rounded-full px-3 py-1">
-          {language === 'es' ? '🇪🇸 Español' : '🇬🇧 English'} words
+          {language === 'es' ? '🇲🇽 Español' : '🇬🇧 English'} words
         </span>
       </div>
 
