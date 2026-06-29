@@ -13,11 +13,14 @@ function generateRoomCode(): string {
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { session_id, display_name } = body
+  const { session_id, display_name, language } = body
 
   if (!session_id || !display_name?.trim()) {
     return Response.json({ error: 'session_id and display_name are required' }, { status: 400 })
   }
+
+  // Word-pack language for this room; default to English
+  const lang = language === 'es' ? 'es' : 'en'
 
   const supabase = createServerClient()
 
@@ -43,7 +46,7 @@ export async function POST(req: NextRequest) {
   // Insert game
   const { data: game, error: gameError } = await supabase
     .from('games')
-    .insert({ room_code, status: 'lobby' })
+    .insert({ room_code, status: 'lobby', language: lang })
     .select('id')
     .single()
 

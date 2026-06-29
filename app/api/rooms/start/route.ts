@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   // Load game
   const { data: game } = await supabase
     .from('games')
-    .select('id, status')
+    .select('id, status, language')
     .eq('room_code', room_code)
     .maybeSingle()
 
@@ -61,12 +61,25 @@ export async function POST(req: NextRequest) {
   if (!blueTeam.some(p => p.role === 'spymaster'))
     return Response.json({ error: 'Blue team needs a spymaster' }, { status: 400 })
 
-  // Fetch word pack
-  const { data: pack } = await supabase
+  // Fetch the word pack for this room's language, preferring the default pack
+  // if a language somehow has several. Fall back to the default pack.
+  const lang = game.language ?? 'en'
+  let { data: pack } = await supabase
     .from('word_packs')
     .select('words')
-    .eq('is_default', true)
+    .eq('language', lang)
+    .order('is_default', { ascending: false })
+    .limit(1)
     .maybeSingle()
+
+  if (!pack?.words?.length) {
+    const fallback = await supabase
+      .from('word_packs')
+      .select('words')
+      .eq('is_default', true)
+      .maybeSingle()
+    pack = fallback.data
+  }
 
   if (!pack?.words?.length) return Response.json({ error: 'No word pack found' }, { status: 500 })
 

@@ -30,6 +30,7 @@ export default function LobbyClient({ code }: { code: string }) {
   const [joinName, setJoinName] = useState('')
   const [joining, setJoining] = useState(false)
   const [joinError, setJoinError] = useState('')
+  const [language, setLanguage] = useState<string>('en')
 
   // Load session from localStorage
   useEffect(() => {
@@ -46,13 +47,14 @@ export default function LobbyClient({ code }: { code: string }) {
   const fetchGame = useCallback(async () => {
     const { data: game } = await supabase
       .from('games')
-      .select('id, status')
+      .select('id, status, language')
       .eq('room_code', code)
       .maybeSingle()
 
     if (!game) { setError('Room not found'); return }
     setGameId(game.id)
     setGameStatus(game.status as GameStatus)
+    setLanguage(game.language ?? 'en')
 
     if (game.status === 'active') {
       router.push(`/room/${code}/game`)
@@ -193,6 +195,9 @@ export default function LobbyClient({ code }: { code: string }) {
         <p className="font-mono text-xs text-zinc-400 uppercase tracking-widest mb-1">room code</p>
         <h1 className="font-mono text-5xl font-bold tracking-widest text-white">{code}</h1>
         <p className="mt-2 font-mono text-xs text-zinc-500">share this code with friends</p>
+        <span className="mt-3 inline-block font-mono text-[10px] uppercase tracking-wider text-zinc-400 border border-zinc-700 rounded-full px-3 py-1">
+          {language === 'es' ? '🇪🇸 Español' : '🇬🇧 English'} words
+        </span>
       </div>
 
       {/* Join prompt for visitors who opened the link without joining */}

@@ -23,11 +23,14 @@ export default function HomeClient() {
   const [loading, setLoading] = useState<'create' | 'join' | null>(null)
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [showRules, setShowRules] = useState(false)
+  const [language, setLanguage] = useState<'en' | 'es'>('en')
   const nameRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const saved = localStorage.getItem('display_name')
     if (saved) setDisplayName(saved)
+    const savedLang = localStorage.getItem('word_language')
+    if (savedLang === 'es' || savedLang === 'en') setLanguage(savedLang)
     nameRef.current?.focus()
 
     // Check auth state
@@ -42,6 +45,11 @@ export default function HomeClient() {
     localStorage.setItem('display_name', name)
   }
 
+  function chooseLanguage(lang: 'en' | 'es') {
+    setLanguage(lang)
+    localStorage.setItem('word_language', lang)
+  }
+
   async function handleCreate() {
     if (!displayName.trim()) { setError('Enter your name first.'); return }
     setError('')
@@ -51,7 +59,7 @@ export default function HomeClient() {
       const res = await fetch('/api/rooms/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: sessionId, display_name: displayName.trim() }),
+        body: JSON.stringify({ session_id: sessionId, display_name: displayName.trim(), language }),
       })
       const data = await readJson(res)
       if (!res.ok) throw new Error(data.error || `Server error (${res.status})`)
@@ -111,6 +119,29 @@ export default function HomeClient() {
             maxLength={20}
             className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2.5 text-white font-mono placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-500"
           />
+        </div>
+
+        {/* Word language (for the room you create) */}
+        <div className="space-y-1.5">
+          <label className="block font-mono text-xs text-zinc-400 uppercase tracking-wider">
+            Word language
+          </label>
+          <div className="flex rounded-lg overflow-hidden border border-zinc-700">
+            <button
+              type="button"
+              onClick={() => chooseLanguage('en')}
+              className={`flex-1 font-mono text-xs py-2 transition-colors ${language === 'en' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-white'}`}
+            >
+              English
+            </button>
+            <button
+              type="button"
+              onClick={() => chooseLanguage('es')}
+              className={`flex-1 font-mono text-xs py-2 transition-colors ${language === 'es' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-white'}`}
+            >
+              Español
+            </button>
+          </div>
         </div>
 
         {/* Create room */}
