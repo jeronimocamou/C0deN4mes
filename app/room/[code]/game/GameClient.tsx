@@ -40,7 +40,7 @@ export default function GameClient({ code }: { code: string }) {
   const [revealingId, setRevealingId] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [timeLeft, setTimeLeft] = useState<number | null>(null)
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const timeoutPingRef = useRef(0)
   const [flashTeam, setFlashTeam] = useState<string | null>(null)
   const prevTeamRef = useRef<string>('')
   const [chatOpen, setChatOpen] = useState(false)
@@ -80,17 +80,35 @@ export default function GameClient({ code }: { code: string }) {
     return () => clearInterval(id)
   }, [sessionId, fetchCards])
 
-  // Turn timer
+  // Clue timer: the current team has 90s to submit a clue. Once a clue is
+  // given, guessing is untimed (timer hidden). When it runs out with no clue,
+  // ping the server to end the turn; the server decides authoritatively so
+  // early/duplicate pings are harmless.
   useEffect(() => {
-    if (!game?.turn_started_at) return
-    if (timerRef.current) clearInterval(timerRef.current)
+    if (!game?.turn_started_at || clue || game.winner) {
+      setTimeLeft(null)
+      return
+    }
     const deadline = new Date(game.turn_started_at).getTime() + 90_000
-    timerRef.current = setInterval(() => {
+    const tick = () => {
       const left = Math.max(0, Math.ceil((deadline - Date.now()) / 1000))
       setTimeLeft(left)
-    }, 500)
-    return () => { if (timerRef.current) clearInterval(timerRef.current) }
-  }, [game?.turn_started_at])
+      if (left === 0 && player && sessionId) {
+        const now = Date.now()
+        if (now - timeoutPingRef.current > 2000) {
+          timeoutPingRef.current = now
+          fetch('/api/rooms/timeout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ room_code: code, session_id: sessionId }),
+          }).then(() => fetchCards(sessionId)).catch(() => {})
+        }
+      }
+    }
+    tick()
+    const id = setInterval(tick, 500)
+    return () => clearInterval(id)
+  }, [game?.turn_started_at, game?.winner, clue, player, sessionId, code, fetchCards])
 
   // Realtime subscription
   useEffect(() => {
@@ -240,8 +258,11 @@ export default function GameClient({ code }: { code: string }) {
             <span className="font-mono text-xs text-zinc-400">👁 spectating</span>
           )}
           {timeLeft !== null && !gameOver && (
-            <span className={`font-mono text-sm tabular-nums ${timeLeft <= 10 ? 'text-red-400' : 'text-zinc-400'}`}>
-              {timeLeft}s
+            <span
+              className={`font-mono text-sm tabular-nums ${timeLeft <= 10 ? 'text-red-400' : 'text-zinc-400'}`}
+              title="Time left for the spymaster to give a clue"
+            >
+              ⏱ {timeLeft}s to clue
             </span>
           )}
           <TurnBadge team={game.current_team} isMyTurn={isMyTurn} gameOver={gameOver} winner={game.winner} />

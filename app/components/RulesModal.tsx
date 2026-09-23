@@ -61,13 +61,14 @@ export default function RulesModal({ onClose }: { onClose: () => void }) {
             <ol className="space-y-2 list-decimal list-inside">
               <li>
                 Your spymaster gives a clue: <span className="text-white">one word</span> + a{' '}
-                <span className="text-white">number</span>.
+                <span className="text-white">number</span> — within{' '}
+                <span className="text-white">90 seconds</span>, or the turn passes to the other team.
                 <p className="text-zinc-400 mt-1 ml-5">
                   e.g. <span className="text-white">&quot;Ocean&nbsp;2&quot;</span> hints that 2
                   of your words relate to the ocean (say WAVE and SHELL).
                 </p>
               </li>
-              <li>Your operatives tap the cards they think are theirs.</li>
+              <li>Your operatives then tap the cards they think are theirs — no time limit on guessing.</li>
               <li>
                 Each tap flips the card to its true color:
                 <ul className="mt-1 ml-5 space-y-1 text-zinc-400">
